@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fila de Lentes · Saint Germain</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Questrial&display=swap">
+<style>
+:root{--bg:#ffffff;--fg:#000000;--g1:#414142;--g2:#5b5b60;--g3:#aea9b4;--soft:#f6f5f7;
+  --ok:#2f6b4a;--okbg:#e8f1ec;--pend:#7a5a12;--pendbg:#f6efe0;--erro:#9b1c1c;
+  --font:"Questrial","Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:1px solid var(--g3);padding-bottom:20px}
+.marca{letter-spacing:.55em;font-size:13px;color:var(--g2)}
+h1{font-weight:400;font-size:30px;letter-spacing:.04em;margin:6px 0 0}
+h2{font-weight:400;font-size:20px;letter-spacing:.04em;margin:0 0 14px}
+.sub{color:var(--g2);font-size:13px;margin-top:6px}
+button{font-family:var(--font);font-size:12px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--fg);background:var(--fg);color:var(--bg);padding:11px 16px;cursor:pointer;border-radius:0}
+button.ghost{background:transparent;color:var(--fg)}
+button:disabled{opacity:.4;cursor:default}
+input,select,textarea{font-family:var(--font);font-size:14px;border:1px solid var(--g3);background:var(--bg);color:var(--fg);padding:10px;border-radius:0}
+input:focus,textarea:focus{outline:none;border-color:var(--fg)}
+.quem{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--g2)}
+.quem strong{font-weight:400;color:var(--fg)}
+.box{max-width:380px;margin:10vh auto;display:grid;gap:12px;text-align:center}
+.box .mut{line-height:1.5}
+.nav{display:flex;border-bottom:1px solid var(--g3);margin-top:18px;flex-wrap:wrap}
+.nav button{background:transparent;color:var(--g2);border:0;border-bottom:2px solid transparent;padding:14px 18px}
+.nav button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--fg)}
+.stats{display:flex;gap:34px;flex-wrap:wrap;margin:24px 0 6px}
+.stat .n{font-size:30px;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--g2)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:22px 0 10px}
+.busca{flex:1 1 320px;min-width:0;display:flex;align-items:center;border:1px solid var(--g3);padding:0 12px}
+.busca input{flex:1;min-width:0;border:0;padding:13px 8px;font-size:15px}
+.tabs{display:flex;border:1px solid var(--g3)}
+.tabs button{background:transparent;color:var(--g2);border:0}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.lista{border-top:1px solid var(--g3)}
+.row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.6fr);gap:18px;padding:18px 4px;border-bottom:1px solid var(--g3);align-items:start}
+.nome{font-size:16px}
+.mut{color:var(--g2);font-size:13px;overflow-wrap:anywhere}
+.k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:3px}
+.num{font-variant-numeric:tabular-nums}
+.files{display:flex;flex-wrap:wrap;gap:6px}
+.files button{background:transparent;color:var(--fg);font-size:11px;letter-spacing:.08em;border:1px solid var(--g3);padding:5px 9px}
+.files button:hover{border-color:var(--fg)}
+.pill{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px}
+.pill.p{background:var(--pendbg);color:var(--pend)}
+.pill.o{background:var(--okbg);color:var(--ok)}
+.osf{display:flex;flex-wrap:wrap;gap:8px}
+.osf input{flex:1 1 110px;min-width:0}
+.feito{display:grid;gap:4px}
+.feito .big{font-size:16px}
+.acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.lk{background:none;border:0;color:var(--g2);padding:0;text-decoration:underline;text-transform:none;letter-spacing:0;font-size:12px}
+.conf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--g2)}
+.conf button{padding:6px 10px;font-size:11px}
+.nota{background:var(--soft);padding:8px 10px;font-size:13px;color:var(--g1);margin-top:8px;overflow-wrap:anywhere}
+.extra{grid-column:1/-1;border-top:1px dashed var(--g3);padding-top:12px}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tl li{display:grid;grid-template-columns:150px 1fr;gap:12px;font-size:13px}
+.tl .q{color:var(--fg)}
+.vazio{padding:60px 10px;text-align:center;color:var(--g2);line-height:1.7}
+.vazio strong{display:block;color:var(--fg);font-weight:400;font-size:18px;margin-bottom:6px}
+.mais{display:flex;justify-content:center;margin-top:24px}
+.erro{color:var(--erro);font-size:13px;min-height:1em}
+.tab{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:400;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--g2);text-align:left;border-bottom:1px solid var(--g3);padding:10px 8px}
+td{border-bottom:1px solid var(--g3);padding:10px 8px;vertical-align:top}
+.form-u{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 22px;padding:16px;border:1px solid var(--g3)}
+.form-u input:not([type=checkbox]){flex:1 1 160px;min-width:0}
+.form-u label{font-size:13px;color:var(--g1);display:flex;gap:6px;align-items:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;flex-direction:column;z-index:10}
+.modal .top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;color:#fff;gap:12px}
+.modal .top span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal .top button{background:#fff;color:#000;border-color:#fff}
+.modal .corpo{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:0 16px 16px}
+.modal img{max-width:100%;max-height:100%;background:#fff}
+.modal iframe{width:100%;height:100%;border:0;background:#fff}
+.pedf{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.pedf input{flex:1 1 90px;min-width:0;padding:7px 8px}
+.pedf button{padding:7px 10px;font-size:11px}
+.filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px}
+.filtros label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--g2);display:flex;gap:8px;align-items:center}
+.filtros button{padding:9px 12px;font-size:11px}
+.resumo{background:var(--soft);padding:12px 14px;font-size:13px;color:var(--g1);margin:0 0 12px;display:flex;flex-wrap:wrap;gap:6px 18px}
+.resumo strong{font-weight:400;color:var(--fg)}
+.tiposel{margin-top:8px;padding:6px 8px;font-size:12px;max-width:100%}
+.tiposel.vazio-t{border-color:var(--pend);color:var(--pend)}
+.nomebtn{background:none;border:0;padding:0;color:var(--fg);font-size:16px;letter-spacing:0;text-transform:none;text-decoration:underline;text-decoration-color:var(--g3);text-underline-offset:3px;text-align:left}
+.ficha-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-end;margin:22px 0 6px}
+.ficha-top h2{font-size:26px;margin:0}
+.dados{display:flex;flex-wrap:wrap;gap:28px;margin:14px 0 4px}
+.dados div{min-width:0}
+tr.clk{cursor:pointer}
+tr.clk:hover td{background:var(--soft)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--fg);color:var(--bg);padding:12px 18px;font-size:13px;z-index:11}
+@media (max-width:840px){.row{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.row{grid-template-columns:1fr}h1{font-size:24px}.tl li{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="marca">SAINT GERMAIN</div><h1>Fila de Lentes</h1><div class="sub">Receitas e DNP enviadas pelos clientes · lançamento de OS</div></div>
+    <div class="quem" id="quem" hidden>Conectada como <strong id="euNome"></strong>
+      <button class="ghost" id="btnSenha" type="button">Trocar senha</button>
+      <button class="ghost" id="btnSair" type="button">Sair</button></div>
+  </header>
+
+  <form class="box" id="fSetup" hidden>
+    <div class="k" style="margin:0">Primeiro acesso</div>
+    <div class="mut">Crie o seu acesso de administradora. Depois você cadastra cada pessoa da equipe com usuário e senha próprios.</div>
+    <input id="sNome" placeholder="Seu nome (como vai aparecer no histórico)" required>
+    <input id="sLogin" placeholder="Usuário (ex.: kah)" autocapitalize="off" required>
+    <input id="sSenha" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="new-password" required>
+    <input id="sSenha2" type="password" placeholder="Repita a senha" autocomplete="new-password" required>
+    <button type="submit">Criar acesso e entrar</button>
+    <div class="erro" id="eSetup"></div>
+  </form>
+
+  <form class="box" id="fLogin" hidden>
+    <div class="k" style="margin:0">Acesso da equipe</div>
+    <input id="lLogin" placeholder="Usuário" autocomplete="username" autocapitalize="off" required>
+    <input id="lSenha" type="password" placeholder="Senha" autocomplete="current-password" required>
+    <button type="submit">Entrar</button>
+    <div class="erro" id="eLogin"></div>
+  </form>
+
+  <form class="box" id="fTroca" hidden>
+    <div class="k" style="margin:0">Trocar senha</div>
+    <div class="mut" id="trocaDica">Defina uma senha só sua.</div>
+    <input id="tAtual" type="password" placeholder="Senha atual" autocomplete="current-password" required>
+    <input id="tNova" type="password" placeholder="Nova senha (mínimo 6 caracteres)" autocomplete="new-password" required>
+    <input id="tNova2" type="password" placeholder="Repita a nova senha" autocomplete="new-password" required>
+    <button type="submit">Salvar nova senha</button>
+    <button type="button" class="ghost" id="tCancelar">Voltar</button>
+    <div class="erro" id="eTroca"></div>
+  </form>
+
+  <div id="app" hidden>
+    <div class="nav">
+      <button type="button" data-v="fila" aria-pressed="true">Fila</button>
+      <button type="button" data-v="cli" aria-pressed="false">Clientes</button>
+      <button type="button" data-v="hist" aria-pressed="false">Histórico</button>
+      <button type="button" data-v="equipe" aria-pressed="false" id="navEquipe" hidden>Equipe</button>
+    </div>
+
+    <section id="vFila">
+      <div class="stats">
+        <div class="stat"><div class="n" id="sPend">0</div><div class="l">Pendentes</div></div>
+        <div class="stat"><div class="n" id="sHoje">0</div><div class="l">OS lançadas hoje</div></div>
+        <div class="stat"><div class="n" id="sOk">0</div><div class="l">Com OS</div></div>
+        <div class="stat"><div class="n" id="sAll">0</div><div class="l">Total recebido</div></div>
+      </div>
+      <div class="bar">
+        <label class="busca" for="q"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="q" type="search" placeholder="Buscar por nome, CPF, e-mail, nº do pedido ou OS" autocomplete="off"></label>
+        <div class="tabs"><button type="button" data-t="pend" aria-pressed="true">Pendentes</button><button type="button" data-t="ok" aria-pressed="false">Com OS</button><button type="button" data-t="all" aria-pressed="false">Todos</button></div>
+        <select id="ord" aria-label="Ordem"><option value="old">Mais antigos primeiro</option><option value="new">Mais recentes primeiro</option></select>
+        <button class="ghost" id="btnAtualizar" type="button">Atualizar</button>
+      </div>
+      <div class="filtros">
+        <label for="fTipo">Tipo <select id="fTipo"><option value="">Todos</option><option>Influenciador</option><option>Embaixadores</option><option>Cliente site</option><option>Diretoria</option><option value="_sem">Sem tipo</option></select></label>
+        <label for="fData">OS lançada em <input type="date" id="fData"></label>
+        <button type="button" class="ghost" id="fHoje">Hoje</button>
+        <button type="button" class="ghost" id="fLimpar" hidden>Limpar filtros</button>
+      </div>
+      <div class="resumo" id="resumo" hidden></div>
+      <div class="lista" id="lista"></div>
+      <div class="mais"><button class="ghost" id="btnMais" type="button" hidden>Mostrar mais</button></div>
+    </section>
+
+    <section id="vCli" hidden>
+      <div id="cliLista">
+        <div class="bar">
+          <label class="busca" for="qc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <input id="qc" type="search" placeholder="Buscar cliente por nome, CPF, e-mail ou nº do pedido" autocomplete="off"></label>
+          <span class="mut" id="cliTotal"></span>
+        </div>
+        <div class="tab"><table><thead><tr><th>Cliente</th><th>CPF</th><th>Envios</th><th>Pendentes</th><th>Com OS</th><th>Último envio</th></tr></thead><tbody id="tCli"></tbody></table></div>
+        <div class="mais"><button class="ghost" id="btnMaisCli" type="button" hidden>Mostrar mais</button></div>
+      </div>
+      <div id="cliFicha" hidden></div>
+    </section>
+
+    <section id="vHist" hidden>
+      <div class="bar"><span class="mut">Últimas 300 ações de toda a equipe: quem fez, o quê e quando.</span><button class="ghost" id="btnHist" type="button">Atualizar</button></div>
+      <div class="tab"><table><thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Pedido</th><th>Detalhes</th></tr></thead><tbody id="tHist"></tbody></table></div>
+    </section>
+
+    <section id="vEquipe" hidden>
+      <h2 style="margin-top:22px">Acessos da equipe</h2>
+      <div class="mut">Cada pessoa entra com o próprio usuário e senha, e tudo o que ela fizer fica registrado no Histórico com o nome dela. Para tirar o acesso de alguém, desative; o histórico dela continua guardado.</div>
+      <form class="form-u" id="fUser">
+        <input id="uNome" placeholder="Nome (ex.: Gilvana)" required>
+        <input id="uLogin" placeholder="Usuário (ex.: gilvana)" autocapitalize="off" required>
+        <input id="uSenha" type="password" placeholder="Senha inicial" autocomplete="new-password">
+        <label><input type="checkbox" id="uAdmin"> Administradora</label>
+        <button type="submit" id="uBtn">Criar acesso</button>
+        <button type="button" class="ghost" id="uLimpar" hidden>Cancelar edição</button>
+        <div class="erro" id="eUser" style="flex-basis:100%"></div>
+      </form>
+      <div class="tab"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody id="tUsers"></tbody></table></div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="top"><span id="mNome"></span><button type="button" id="mFechar">Fechar</button></div><div class="corpo" id="mCorpo"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const dig=s=>String(s??'').replace(/\D/g,'');
+const fmt=iso=>{if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' · '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+const cpfFmt=c=>{c=dig(c);return c.length===11?c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):c};
+const msg=e=>((e&&e.message)||'').replace(/^.*?(Exception|Error):\s*/,'')||'Erro inesperado.';
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800)}
+const API='https://script.google.com/macros/s/AKfycbwZkxJmo1GvlrCaIik8hIcyn8B5ZZqFa_ylJLM8QNfoGr99-Bct57RBseYUxvnLTrog/exec';
+async function call(fn,...a){
+  const corpo=JSON.stringify({acao:'chamar',fn,args:a});
+  let ult;
+  for(let t=0;t<3;t++){
+    try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:corpo});const j=await r.json();
+      if(!j.ok)throw Object.assign(new Error(j.erro||'Erro inesperado.'),{servidor:true});return j.resultado}
+    catch(e){if(e.servidor)throw e;ult=e;await new Promise(ok=>setTimeout(ok,1500))}
+  }
+  throw new Error('Sem conexão com o servidor. Verifique a internet e tente de novo.');
+}
+async function run(fn,...a){try{return await call(fn,S.token,...a)}catch(e){if(/sess[aã]o expirou/i.test(msg(e))){sairLocal();toast('Sua sessão expirou. Entre novamente.')}throw e}}
+
+function tela(id){['fSetup','fLogin','fTroca','app'].forEach(x=>$(x).hidden=x!==id);$('quem').hidden=!S.eu||!(id==='app'||id==='fTroca')}
+function sairLocal(){S.token='';S.eu=null;try{sessionStorage.removeItem('sg-t');sessionStorage.removeItem('sg-u')}catch(_){};tela('fLogin')}
+
+(async()=>{
+  try{const t=sessionStorage.getItem('sg-t'),u=sessionStorage.getItem('sg-u');if(t&&u){S.token=t;S.eu=JSON.parse(u);entrarApp();return}}catch(_){}
+  try{const tem=await call('temUsuarios');tela(tem?'fLogin':'fSetup')}catch(e){tela('fLogin');$('eLogin').textContent=msg(e)}
+})();
+function guardar(r){S.token=r.token;S.eu=r.usuario;try{sessionStorage.setItem('sg-t',r.token);sessionStorage.setItem('sg-u',JSON.stringify(r.usuario))}catch(_){}}
+
+$('fSetup').addEventListener('submit',async e=>{e.preventDefault();const er=$('eSetup');
+  if($('sSenha').value!==$('sSenha2').value){er.textContent='As senhas não são iguais.';return}
+  er.textContent='Criando…';
+  try{guardar(await call('criarAdmin',$('sNome').value,$('sLogin').value,$('sSenha').value));er.textContent='';entrarApp()}catch(x){er.textContent=msg(x)}});
+
+$('fLogin').addEventListener('submit',async e=>{e.preventDefault();const er=$('eLogin');er.textContent='Entrando…';
+  try{const r=await call('entrar',$('lLogin').value,$('lSenha').value);guardar(r);er.textContent='';$('lSenha').value='';
+    if(r.trocarSenha)abrirTroca(true);else entrarApp()}catch(x){er.textContent=msg(x)}});
+
+function abrirTroca(obrig){$('trocaDica').textContent=obrig?'Primeiro acesso: troque a senha inicial por uma senha só sua.':'Defina uma nova senha.';$('tCancelar').hidden=!!obrig;$('euNome').textContent=S.eu.nome;tela('fTroca')}
+$('btnSenha').onclick=()=>abrirTroca(false);
+$('tCancelar').onclick=()=>tela('app');
+$('fTroca').addEventListener('submit',async e=>{e.preventDefault();const er=$('eTroca');
+  if($('tNova').value!==$('tNova2').value){er.textContent='As senhas não são iguais.';return}
+  er.textContent='Salvando…';
+  try{await run('trocarSenha',$('tAtual').value,$('tNova').value);['tAtual','tNova','tNova2'].forEach(x=>$(x).value='');er.textContent='';toast('Senha alterada');entrarApp()}catch(x){er.textContent=msg(x)}});
+$('btnSair').onclick=async()=>{try{await call('sair',S.token)}catch(_){};sairLocal()};
+
+function entrarApp(){$('euNome').textContent=S.eu.nome;$('navEquipe').hidden=!S.eu.admin;tela('app');carregar()}
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.nav button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('vFila').hidden=b.dataset.v!=='fila';$('vCli').hidden=b.dataset.v!=='cli';$('vHist').hidden=b.dataset.v!=='hist';
+  if(b.dataset.v==='cli'){S.ficha='';renderCli()}$('vEquipe').hidden=b.dataset.v!=='equipe';
+  if(b.dataset.v==='hist')carregarHist();if(b.dataset.v==='equipe')carregarUsers();
+});
+
+async function carregar(aviso){
+  try{const r=await run('listar');S.itens=r.itens;S.clientes=r.clientes||[];render();if(!$('vCli').hidden)renderCli();if(aviso)toast('Fila atualizada')}
+  catch(e){if(S.token)$('lista').innerHTML='<div class="vazio"><strong>Não foi possível carregar</strong>'+esc(msg(e))+'</div>'}
+}
+$('btnAtualizar').onclick=()=>carregar(true);
+setInterval(()=>{if(!$('app').hidden&&!$('vFila').hidden&&!document.querySelector('#lista input:focus,#lista textarea:focus'))carregar(false)},120000);
+try{S.ord=localStorage.getItem('sg-ord')||'old';$('ord').value=S.ord}catch(_){}
+$('q').oninput=e=>{S.q=e.target.value;S.pag=60;render()};
+$('ord').onchange=e=>{S.ord=e.target.value;try{localStorage.setItem('sg-ord',S.ord)}catch(_){};render()};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;S.pag=60;S.fData='';$('fData').value='';document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+$('btnMais').onclick=()=>{S.pag+=60;render()};
+
+const temOS=i=>!!String(i.os||'').trim();
+const TIPOS=['Influenciador','Embaixadores','Cliente site','Diretoria'];
+const diaLocal=iso=>{if(!iso)return'';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const tipoSel=i=>'<select class="tiposel'+(i.tipo?'':' vazio-t')+'" data-id="'+esc(i.id)+'" aria-label="Tipo do pedido"><option value="">'+(i.tipo?'Sem tipo':'Escolher tipo do pedido…')+'</option>'+TIPOS.map(t=>'<option'+(i.tipo===t?' selected':'')+'>'+t+'</option>').join('')+'</select>';
+$('fTipo').onchange=e=>{S.fTipo=e.target.value;S.pag=60;render()};
+$('fData').onchange=e=>{S.fData=e.target.value;S.pag=60;render()};
+$('fHoje').onclick=()=>{S.fData=diaLocal(new Date().toISOString());$('fData').value=S.fData;S.pag=60;render()};
+$('fLimpar').onclick=()=>{S.fData='';S.fTipo='';$('fData').value='';$('fTipo').value='';render()};
+$('lista').addEventListener('change',async e=>{const s=e.target.closest('select.tiposel');if(!s)return;const id=s.dataset.id,t=s.value;s.disabled=true;
+  try{await run('salvarTipo',id,t);item(id).tipo=t;delete S.hist[id];toast((t||'Sem tipo')+' · salvo por '+S.eu.nome);render()}catch(x){s.disabled=false;toast(msg(x));render()}});
+function render(){
+  const pend=S.itens.filter(i=>!temOS(i)),ok=S.itens.filter(temOS),hoje=new Date().toDateString();
+  $('sPend').textContent=pend.length.toLocaleString('pt-BR');$('sOk').textContent=ok.length.toLocaleString('pt-BR');
+  $('sAll').textContent=S.itens.length.toLocaleString('pt-BR');$('sHoje').textContent=ok.filter(i=>i.osEm&&new Date(i.osEm).toDateString()===hoje).length;
+  let l=S.fData?ok.filter(i=>diaLocal(i.osEm)===S.fData):(S.tab==='pend'?pend:S.tab==='ok'?ok:S.itens.slice());
+  if(S.fTipo)l=l.filter(i=>S.fTipo==='_sem'?!i.tipo:i.tipo===S.fTipo);
+  $('fLimpar').hidden=!S.fData&&!S.fTipo;
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',!S.fData&&x.dataset.t===S.tab));
+  if(S.fData){const cont={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1});
+    $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('');$('resumo').hidden=false}
+  else $('resumo').hidden=true;
+  const q=norm(S.q.trim()),qd=dig(S.q);
+  if(q)l=l.filter(i=>norm([i.nome,i.email,i.pedido,i.os,i.id].join(' ')).includes(q)||(qd.length>=3&&(dig(i.cpf).includes(qd)||dig(i.pedido).includes(qd)||dig(i.os).includes(qd))));
+  l.sort((a,b)=>S.ord==='old'?a.data.localeCompare(b.data):b.data.localeCompare(a.data));
+  const el=$('lista');
+  if(!S.itens.length){el.innerHTML='<div class="vazio"><strong>Nenhuma receita recebida ainda</strong>Assim que um cliente enviar pelo link do site, o envio aparece aqui como pendente.</div>';$('btnMais').hidden=true;return}
+  if(!l.length){el.innerHTML='<div class="vazio"><strong>Nada encontrado</strong>'+(q?'Nenhum envio corresponde a “'+esc(S.q)+'” nesta aba. Tente a aba Todos.':'Não há envios nesta aba.')+'</div>';$('btnMais').hidden=true;return}
+  const rasc={};el.querySelectorAll('input[id],textarea[id]').forEach(x=>rasc[x.id]=x.value);
+  el.innerHTML=l.slice(0,S.pag).map(linha).join('');
+  for(const k in rasc){const x=$(k);if(x)x.value=rasc[k]}
+  $('btnMais').hidden=l.length<=S.pag;$('btnMais').textContent='Mostrar mais ('+(l.length-S.pag)+' restantes)';
+}
+const arqs=(a,r)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
+function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(i.os):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
+function pedidoHTML(i){
+  if(i.pedido&&S.abertos['ped-'+i.id]!=='ed')return '<div class="num">'+esc(i.pedido)+'</div><button class="lk" type="button" data-a="edPed" data-id="'+esc(i.id)+'">Editar pedido</button>';
+  return (i.pedido?'':'<span class="pill p" style="margin-bottom:6px">Sem pedido</span>')+'<form class="pedf" data-id="'+esc(i.id)+'"><input id="pp-'+esc(i.id)+'" name="ped" value="'+esc(i.pedido)+'" placeholder="Incluir nº do pedido" aria-label="Nº do pedido"><button type="submit">Salvar</button>'+(i.pedido?'<button type="button" class="ghost" data-a="cancPed" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>';
+}
+function linha(i){
+  const tem=temOS(i),ab=S.abertos[i.id]||'';
+  const dir=tem&&ab!=='editar'
+    ?'<div class="feito"><span class="pill o">OS lançada</span><span class="big num">OS '+esc(i.os)+'</span><span class="mut">Por '+esc(i.resp)+' · '+esc(fmt(i.osEm))+'</span></div>'
+    :osForm(i,tem);
+  const acoes='<div class="acoes" data-id="'+esc(i.id)+'">'
+    +(tem&&ab!=='editar'?'<button class="lk" type="button" data-a="editar">Alterar OS</button><button class="lk" type="button" data-a="dev">Devolver para a fila</button>':'')
+    +'<button class="lk" type="button" data-a="nota">'+(i.nota?'Editar nota':'Nota interna')+'</button>'
+    +'<button class="lk" type="button" data-a="hist">'+(ab==='hist'?'Ocultar histórico':'Ver histórico')+'</button></div>';
+  let extra='';
+  if(ab==='nota')extra='<div class="extra"><form class="notaf" data-id="'+esc(i.id)+'" style="display:flex;gap:8px;flex-wrap:wrap"><textarea id="n-'+esc(i.id)+'" rows="2" style="flex:1 1 300px;min-width:0" maxlength="1000" placeholder="Nota interna, visível só para a equipe">'+esc(i.nota)+'</textarea><button type="submit">Salvar nota</button><button type="button" class="ghost" data-a="fechaExtra" data-id="'+esc(i.id)+'">Cancelar</button></form></div>';
+  if(ab==='hist'){const h=S.hist[i.id];extra='<div class="extra">'+(!h?'<span class="mut">Carregando histórico…</span>':!h.length?'<span class="mut">Sem registros.</span>':'<ul class="tl">'+h.map(x=>'<li><span class="mut num">'+esc(fmt(x.data))+'</span><span><span class="q">'+esc(x.nome)+'</span> · '+esc(x.acao)+(x.det?' <span class="mut">· '+esc(x.det)+'</span>':'')+'</span></li>').join('')+'</ul>')+'</div>'}
+  return '<div class="row"><div><button type="button" class="nomebtn" data-a="ficha" data-cpf="'+esc(dig(i.cpf))+'" title="Abrir ficha do cliente">'+esc(i.nome)+'</button><div class="mut">'+esc(i.email)+(i.whats?' · '+esc(i.whats):'')+'</div><div class="mut">Enviado em '+esc(fmt(i.data))+' · '+esc(i.id)+'</div>'+tipoSel(i)+(i.obs?'<div class="mut" style="margin-top:6px">Obs. do cliente: '+esc(i.obs)+'</div>':'')+(i.nota?'<div class="nota">Nota interna: '+esc(i.nota)+'</div>':'')+'</div>'
+   +'<div><span class="k">Pedido</span>'+pedidoHTML(i)+'<span class="k" style="margin-top:8px">CPF</span><div class="num">'+esc(cpfFmt(i.cpf))+'</div>'+(tem?'':'<div style="margin-top:8px"><span class="pill p">Pendente</span></div>')+'</div>'
+   +'<div><span class="k">Receita</span><div class="files">'+(arqs(i.receita,'Receita')||'<span class="mut">—</span>')+'</div><span class="k" style="margin-top:10px">DNP</span>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP')+'</div></div>'
+   +'<div>'+dir+acoes+'</div>'+extra+'</div>';
+}
+const item=id=>S.itens.find(x=>x.id===id);
+$('lista').addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target,id=f.dataset.id,b=f.querySelector('button[type=submit]');b.disabled=true;
+  try{
+    if(f.classList.contains('osf')){const os=f.os.value.trim(),ped=f.pedido?f.pedido.value.trim():'';if(!os){b.disabled=false;return}
+      await run('lancarOS',id,os,ped);Object.assign(item(id),{os,pedido:ped||item(id).pedido,resp:S.eu.nome,osEm:new Date().toISOString(),status:'Com OS'});delete S.abertos[id];delete S.hist[id];toast('OS '+os+' salva por '+S.eu.nome)}
+    else if(f.classList.contains('pedf')){const p=f.ped.value.trim();if(!p){b.disabled=false;return}await run('salvarPedido',id,p);item(id).pedido=p;delete S.abertos['ped-'+id];delete S.hist[id];toast('Pedido '+p+' salvo por '+S.eu.nome)}
+    else if(f.classList.contains('notaf')){const n=f.querySelector('textarea').value.trim();await run('salvarNota',id,n);item(id).nota=n;delete S.abertos[id];delete S.hist[id];toast('Nota salva')}
+    render();
+  }catch(x){b.disabled=false;toast(msg(x))}
+});
+$('lista').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='ver'){abrirArquivo(b.dataset.url,b.dataset.nome);return}
+  if(a==='ficha'){abrirFicha(b.dataset.cpf);return}
+  const box=b.closest('[data-id]'),id=b.dataset.id||(box&&box.dataset.id);
+  if(a==='editar'){S.abertos[id]='editar';render();return}
+  if(a==='edPed'){S.abertos['ped-'+id]='ed';render();return}
+  if(a==='cancPed'){delete S.abertos['ped-'+id];render();return}
+  if(a==='cancelaEd'||a==='fechaExtra'){delete S.abertos[id];render();return}
+  if(a==='nota'){if(S.abertos[id]==='nota')delete S.abertos[id];else S.abertos[id]='nota';render();return}
+  if(a==='hist'){if(S.abertos[id]==='hist'){delete S.abertos[id];render();return}
+    S.abertos[id]='hist';render();try{S.hist[id]=await run('historico',id)}catch(x){S.hist[id]=[];toast(msg(x))}render();return}
+  if(a==='dev'){box.innerHTML='<span class="conf">Voltar para Pendentes? A OS sai do envio e isso fica no histórico. <button type="button" data-a="sim">Sim</button><button type="button" class="ghost" data-a="nao">Não</button></span>';return}
+  if(a==='nao'){render();return}
+  if(a==='sim'){try{await run('devolverParaFila',id);Object.assign(item(id),{os:'',resp:'',osEm:'',status:'Pendente'});delete S.hist[id];render();toast('Envio devolvido para a fila')}catch(x){toast(msg(x))}}
+});
+
+async function abrirArquivo(url,nome){
+  $('mNome').textContent=nome+' · carregando…';$('mCorpo').innerHTML='';$('modal').hidden=false;
+  try{const f=await run('verArquivo',url);$('mNome').textContent=nome+' · '+f.nome;
+    const bin=atob(f.data),arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    const src=URL.createObjectURL(new Blob([arr],{type:f.tipo}));
+    $('mCorpo').innerHTML=/pdf/i.test(f.tipo)?'<iframe title="'+esc(nome)+'" src="'+src+'"></iframe>':/^image\//.test(f.tipo)?'<img alt="'+esc(nome)+'" src="'+src+'">':'<span style="color:#fff">Formato sem pré-visualização ('+esc(f.tipo)+'). Abra pela pasta no Drive.</span>';
+  }catch(x){$('mNome').textContent=nome;$('mCorpo').innerHTML='<span style="color:#fff">'+esc(msg(x))+'</span>'}
+}
+$('mFechar').onclick=()=>{$('modal').hidden=true;$('mCorpo').innerHTML=''};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('modal').hidden)$('mFechar').click()});
+
+/* ---------- clientes ---------- */
+function montarClientes(){
+  const m={};
+  S.clientes.forEach(c=>{m[c.cpf]={...c,envios:[]}});
+  S.itens.forEach(i=>{const k=dig(i.cpf);if(!m[k])m[k]={cpf:k,nome:i.nome,email:i.email,whats:i.whats,primeiro:i.data,ultimo:i.data,pasta:'',envios:[]};m[k].envios.push(i)});
+  return Object.values(m).map(c=>{c.envios.sort((a,b)=>b.data.localeCompare(a.data));
+    if(c.envios[0]){c.ultimo=c.envios[0].data;c.nome=c.envios[0].nome||c.nome}
+    c.pend=c.envios.filter(i=>!temOS(i)).length;c.ok=c.envios.length-c.pend;return c});
+}
+$('qc').oninput=e=>{S.qc=e.target.value;S.pagCli=100;renderCli()};
+$('btnMaisCli').onclick=()=>{S.pagCli+=100;renderCli()};
+function renderCli(){
+  if(S.ficha){renderFicha();return}
+  $('cliLista').hidden=false;$('cliFicha').hidden=true;
+  let l=montarClientes();
+  const q=norm(S.qc.trim()),qd=dig(S.qc);
+  if(q)l=l.filter(c=>norm([c.nome,c.email].concat(c.envios.map(i=>i.pedido+' '+i.os)).join(' ')).includes(q)||(qd.length>=3&&(c.cpf.includes(qd)||c.envios.some(i=>dig(i.pedido).includes(qd)||dig(i.os).includes(qd)))));
+  l.sort((a,b)=>String(b.ultimo).localeCompare(String(a.ultimo)));
+  $('cliTotal').textContent=l.length.toLocaleString('pt-BR')+' cliente'+(l.length===1?'':'s');
+  $('tCli').innerHTML=l.length?l.slice(0,S.pagCli).map(c=>'<tr class="clk" data-cpf="'+esc(c.cpf)+'" tabindex="0"><td>'+esc(c.nome)+'<div class="mut">'+esc(c.email)+'</div></td><td class="num">'+esc(cpfFmt(c.cpf))+'</td><td class="num">'+c.envios.length+'</td><td class="num">'+(c.pend?'<span class="pill p">'+c.pend+'</span>':'0')+'</td><td class="num">'+c.ok+'</td><td class="num">'+esc(fmt(c.ultimo))+'</td></tr>').join('')
+    :'<tr><td colspan="6" class="mut">'+(q?'Nenhum cliente encontrado para “'+esc(S.qc)+'”.':'Nenhum cliente ainda. A ficha é criada no primeiro envio de receita.')+'</td></tr>';
+  $('btnMaisCli').hidden=l.length<=S.pagCli;
+}
+$('tCli').addEventListener('click',e=>{const tr=e.target.closest('tr[data-cpf]');if(tr)abrirFicha(tr.dataset.cpf)});
+$('tCli').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr[data-cpf]');if(tr)abrirFicha(tr.dataset.cpf)}});
+function abrirFicha(cpf){
+  S.ficha=cpf;
+  document.querySelectorAll('.nav button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='cli'));
+  $('vFila').hidden=true;$('vHist').hidden=true;$('vEquipe').hidden=true;$('vCli').hidden=false;
+  renderFicha();window.scrollTo(0,0);
+}
+function renderFicha(){
+  const c=montarClientes().find(x=>x.cpf===S.ficha);
+  $('cliLista').hidden=true;$('cliFicha').hidden=false;
+  if(!c){$('cliFicha').innerHTML='<div class="vazio"><strong>Cliente não encontrado</strong><button class="ghost" type="button" data-f="voltar">Voltar para clientes</button></div>';return}
+  $('cliFicha').innerHTML='<div class="bar" style="margin-bottom:0"><button class="ghost" type="button" data-f="voltar">← Todos os clientes</button></div>'
+   +'<div class="ficha-top"><div><div class="k">Ficha do cliente</div><h2>'+esc(c.nome)+'</h2></div></div>'
+   +'<div class="dados"><div><span class="k">CPF</span><div class="num">'+esc(cpfFmt(c.cpf))+'</div></div><div><span class="k">E-mail</span><div>'+esc(c.email||'—')+'</div></div><div><span class="k">WhatsApp</span><div>'+esc(c.whats||'—')+'</div></div><div><span class="k">Cliente desde</span><div class="num">'+esc(fmt(c.primeiro)||'—')+'</div></div></div>'
+   +'<div class="stats"><div class="stat"><div class="n">'+c.envios.length+'</div><div class="l">Receitas enviadas</div></div><div class="stat"><div class="n">'+new Set(c.envios.map(i=>i.pedido).filter(Boolean)).size+'</div><div class="l">Pedidos</div></div><div class="stat"><div class="n">'+c.ok+'</div><div class="l">Com OS</div></div><div class="stat"><div class="n">'+c.pend+'</div><div class="l">Pendentes</div></div></div>'
+   +'<div class="tab" style="margin-top:18px"><table><thead><tr><th>Enviado em</th><th>Pedido</th><th>Tipo</th><th>Receita</th><th>DNP</th><th>OS</th><th>Responsável</th><th>Situação</th></tr></thead><tbody>'
+   +c.envios.map(i=>'<tr><td class="num">'+esc(fmt(i.data))+'</td><td class="num">'+esc(i.pedido||'—')+'</td><td>'+esc(i.tipo||'—')+'</td><td><div class="files">'+(arqs(i.receita,'Receita')||'—')+'</div></td><td>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP')+'</div></td><td class="num">'+esc(i.os||'—')+'</td><td>'+esc(i.resp||'—')+(i.osEm?'<div class="mut">'+esc(fmt(i.osEm))+'</div>':'')+'</td><td>'+(temOS(i)?'<span class="pill o">Com OS</span>':'<span class="pill p">Pendente</span>')+(i.nota?'<div class="mut" style="margin-top:4px">Nota: '+esc(i.nota)+'</div>':'')+'</td></tr>').join('')
+   +'</tbody></table></div><div class="mut" style="margin-top:12px">Para lançar ou alterar a OS de um envio pendente, use a aba Fila e busque pelo CPF.</div>';
+}
+$('cliFicha').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.f==='voltar'){S.ficha='';renderCli();return}
+  if(b.dataset.a==='ver')abrirArquivo(b.dataset.url,b.dataset.nome)});
+
+async function carregarHist(){
+  $('tHist').innerHTML='<tr><td colspan="5" class="mut">Carregando…</td></tr>';
+  try{const h=await run('historico','');$('tHist').innerHTML=h.length?h.map(x=>'<tr><td class="num">'+esc(fmt(x.data))+'</td><td>'+esc(x.nome)+'</td><td>'+esc(x.acao)+'</td><td class="num">'+esc(x.pedido)+'</td><td class="mut">'+esc(x.det)+'</td></tr>').join(''):'<tr><td colspan="5" class="mut">Nenhuma ação registrada ainda.</td></tr>'}
+  catch(x){$('tHist').innerHTML='<tr><td colspan="5" class="erro">'+esc(msg(x))+'</td></tr>'}
+}
+$('btnHist').onclick=carregarHist;
+
+async function carregarUsers(){try{S.users=await run('listarUsuarios');renderUsers()}catch(x){$('eUser').textContent=msg(x)}}
+function renderUsers(){
+  $('tUsers').innerHTML=S.users.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.login)+'</td><td>'+(u.admin?'Administradora':'Equipe')+'</td><td>'+(u.ativo?'<span class="pill o">Ativo</span>':'<span class="pill p">Desativado</span>')+'</td><td style="white-space:nowrap"><button class="lk" type="button" data-u="ed" data-l="'+esc(u.login)+'">Editar</button>'
+    +(u.login!==S.eu.login?' &nbsp; <button class="lk" type="button" data-u="'+(u.ativo?'off':'on')+'" data-l="'+esc(u.login)+'">'+(u.ativo?'Desativar':'Reativar')+'</button>':'')+'</td></tr>').join('');
+}
+function limparUser(){['uNome','uLogin','uSenha'].forEach(x=>$(x).value='');$('uAdmin').checked=false;$('uLogin').disabled=false;$('uBtn').textContent='Criar acesso';$('uLimpar').hidden=true;$('uSenha').placeholder='Senha inicial';$('eUser').textContent=''}
+$('uLimpar').onclick=limparUser;
+$('fUser').addEventListener('submit',async e=>{e.preventDefault();const er=$('eUser');er.textContent='Salvando…';
+  const editando=$('uLogin').disabled,u=S.users.find(x=>x.login===$('uLogin').value);
+  try{S.users=await run('salvarUsuario',{nome:$('uNome').value,login:$('uLogin').value,senha:$('uSenha').value,admin:$('uAdmin').checked,ativo:editando&&u?u.ativo:true});
+    renderUsers();limparUser();toast(editando?'Acesso atualizado':'Acesso criado. Passe o usuário e a senha inicial para a pessoa.')}catch(x){er.textContent=msg(x)}});
+$('tUsers').addEventListener('click',async e=>{const b=e.target.closest('button[data-u]');if(!b)return;const u=S.users.find(x=>x.login===b.dataset.l);
+  if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;$('uLogin').disabled=true;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
+  try{S.users=await run('salvarUsuario',{nome:u.nome,login:u.login,admin:u.admin,ativo:b.dataset.u==='on'});renderUsers();toast(b.dataset.u==='on'?'Acesso reativado':'Acesso desativado')}catch(x){toast(msg(x))}});
+</script>
+</body>
+</html>
