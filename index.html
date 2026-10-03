@@ -200,7 +200,14 @@ tr.clk:hover td{background:var(--soft)}
     </section>
 
     <section id="vEquipe" hidden>
-      <h2 style="margin-top:22px">Acessos da equipe</h2>
+      <h2 style="margin-top:22px">Link do cliente</h2>
+      <form class="form-u" id="fConfig" style="margin-bottom:30px">
+        <label for="cPrazo" style="flex-basis:100%">Prazo de confecção que aparece para o cliente (dias úteis)</label>
+        <input type="number" id="cPrazo" min="1" max="90" style="flex:0 1 120px" required>
+        <button type="submit">Salvar prazo</button>
+        <span class="mut" id="cInfo"></span>
+      </form>
+      <h2>Acessos da equipe</h2>
       <div class="mut">Cada pessoa entra com o próprio usuário e senha, e tudo o que ela fizer fica registrado no Histórico com o nome dela. Para tirar o acesso de alguém, desative; o histórico dela continua guardado.</div>
       <form class="form-u" id="fUser">
         <input id="uNome" placeholder="Nome (ex.: Gilvana)" required>
@@ -438,7 +445,10 @@ async function carregarHist(){
 }
 $('btnHist').onclick=carregarHist;
 
-async function carregarUsers(){try{S.users=await run('listarUsuarios');renderUsers()}catch(x){$('eUser').textContent=msg(x)}}
+async function carregarUsers(){try{S.users=await run('listarUsuarios');renderUsers()}catch(x){$('eUser').textContent=msg(x)}
+  try{const c=await run('obterConfig');$('cPrazo').value=c.prazoDias;$('cInfo').textContent='Atual: até '+c.prazoDias+' dias úteis.'}catch(x){$('cInfo').textContent=msg(x)}}
+$('fConfig').addEventListener('submit',async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;
+  try{const c=await run('salvarConfig',{prazoDias:$('cPrazo').value});$('cInfo').textContent='Atual: até '+c.prazoDias+' dias úteis.';toast('Prazo salvo: '+c.prazoDias+' dias úteis. O link do cliente já mostra o novo prazo.')}catch(x){toast(msg(x))}b.disabled=false});
 function renderUsers(){
   $('tUsers').innerHTML=S.users.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.login)+'</td><td>'+(u.admin?'Administradora':'Equipe')+'</td><td>'+(u.ativo?'<span class="pill o">Ativo</span>':'<span class="pill p">Desativado</span>')+'</td><td style="white-space:nowrap"><button class="lk" type="button" data-u="ed" data-l="'+esc(u.login)+'">Editar</button>'
     +(u.login!==S.eu.login?' &nbsp; <button class="lk" type="button" data-u="'+(u.ativo?'off':'on')+'" data-l="'+esc(u.login)+'">'+(u.ativo?'Desativar':'Reativar')+'</button>':'')+'</td></tr>').join('');
