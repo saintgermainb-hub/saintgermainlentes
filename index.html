@@ -443,14 +443,15 @@ function renderUsers(){
   $('tUsers').innerHTML=S.users.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.login)+'</td><td>'+(u.admin?'Administradora':'Equipe')+'</td><td>'+(u.ativo?'<span class="pill o">Ativo</span>':'<span class="pill p">Desativado</span>')+'</td><td style="white-space:nowrap"><button class="lk" type="button" data-u="ed" data-l="'+esc(u.login)+'">Editar</button>'
     +(u.login!==S.eu.login?' &nbsp; <button class="lk" type="button" data-u="'+(u.ativo?'off':'on')+'" data-l="'+esc(u.login)+'">'+(u.ativo?'Desativar':'Reativar')+'</button>':'')+'</td></tr>').join('');
 }
-function limparUser(){['uNome','uLogin','uSenha'].forEach(x=>$(x).value='');$('uAdmin').checked=false;$('uLogin').disabled=false;$('uBtn').textContent='Criar acesso';$('uLimpar').hidden=true;$('uSenha').placeholder='Senha inicial';$('eUser').textContent=''}
+function limparUser(){['uNome','uLogin','uSenha'].forEach(x=>$(x).value='');$('uAdmin').checked=false;$('uLogin').disabled=false;S.editLogin='';$('uBtn').textContent='Criar acesso';$('uLimpar').hidden=true;$('uSenha').placeholder='Senha inicial';$('eUser').textContent=''}
 $('uLimpar').onclick=limparUser;
 $('fUser').addEventListener('submit',async e=>{e.preventDefault();const er=$('eUser');er.textContent='Salvando…';
-  const editando=$('uLogin').disabled,u=S.users.find(x=>x.login===$('uLogin').value);
-  try{S.users=await run('salvarUsuario',{nome:$('uNome').value,login:$('uLogin').value,senha:$('uSenha').value,admin:$('uAdmin').checked,ativo:editando&&u?u.ativo:true});
+  const editando=!!S.editLogin,u=S.users.find(x=>x.login===S.editLogin),eraEu=editando&&S.editLogin===S.eu.login;
+  try{S.users=await run('salvarUsuario',{nome:$('uNome').value,login:$('uLogin').value,loginAntigo:S.editLogin||$('uLogin').value,senha:$('uSenha').value,admin:$('uAdmin').checked,ativo:editando&&u?u.ativo:true});
+    if(eraEu){const nl=norm($('uLogin').value.trim()).replace(/[^a-z0-9._-]/g,''),novo=S.users.find(x=>x.login===nl);if(novo){S.eu=Object.assign({},S.eu,{login:novo.login,nome:novo.nome});$('euNome').textContent=S.eu.nome;try{sessionStorage.setItem('sg-u',JSON.stringify(S.eu))}catch(_){}}}
     renderUsers();limparUser();toast(editando?'Acesso atualizado':'Acesso criado. Passe o usuário e a senha inicial para a pessoa.')}catch(x){er.textContent=msg(x)}});
 $('tUsers').addEventListener('click',async e=>{const b=e.target.closest('button[data-u]');if(!b)return;const u=S.users.find(x=>x.login===b.dataset.l);
-  if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;$('uLogin').disabled=true;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
+  if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;S.editLogin=u.login;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
   try{S.users=await run('salvarUsuario',{nome:u.nome,login:u.login,admin:u.admin,ativo:b.dataset.u==='on'});renderUsers();toast(b.dataset.u==='on'?'Acesso reativado':'Acesso desativado')}catch(x){toast(msg(x))}});
 </script>
 </body>
