@@ -318,8 +318,8 @@ function render(){
   if(S.fData){const cont={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1});
     $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('');$('resumo').hidden=false}
   else $('resumo').hidden=true;
-  const q=norm(S.q.trim()),qd=dig(S.q);
-  if(q)l=l.filter(i=>norm([i.nome,i.email,i.pedido,i.os,i.id].join(' ')).includes(q)||(qd.length>=3&&(dig(i.cpf).includes(qd)||dig(i.pedido).includes(qd)||dig(i.os).includes(qd))));
+  const q=norm(S.q.trim()),qd=/[a-z@]/i.test(S.q)?'':dig(S.q);
+  if(q)l=l.filter(i=>qd?[i.cpf,i.pedido,i.os].some(x=>dig(x)===qd):[i.nome,i.email,i.pedido,i.os,i.id].some(x=>norm(x).includes(q)));
   l.sort((a,b)=>S.ord==='old'?a.data.localeCompare(b.data):b.data.localeCompare(a.data));
   const el=$('lista');
   if(!S.itens.length){el.innerHTML='<div class="vazio"><strong>Nenhuma receita recebida ainda</strong>Assim que um cliente enviar pelo link do site, o envio aparece aqui como pendente.</div>';$('btnMais').hidden=true;return}
@@ -406,8 +406,8 @@ function renderCli(){
   if(S.ficha){renderFicha();return}
   $('cliLista').hidden=false;$('cliFicha').hidden=true;
   let l=montarClientes();
-  const q=norm(S.qc.trim()),qd=dig(S.qc);
-  if(q)l=l.filter(c=>norm([c.nome,c.email].concat(c.envios.map(i=>i.pedido+' '+i.os)).join(' ')).includes(q)||(qd.length>=3&&(c.cpf.includes(qd)||c.envios.some(i=>dig(i.pedido).includes(qd)||dig(i.os).includes(qd)))));
+  const q=norm(S.qc.trim()),qd=/[a-z@]/i.test(S.qc)?'':dig(S.qc);
+  if(q)l=l.filter(c=>qd?(dig(c.cpf)===qd||c.envios.some(i=>dig(i.pedido)===qd||dig(i.os)===qd)):[c.nome,c.email].concat(c.envios.map(i=>i.pedido),c.envios.map(i=>i.os)).some(x=>norm(x).includes(q)));
   l.sort((a,b)=>String(b.ultimo).localeCompare(String(a.ultimo)));
   $('cliTotal').textContent=l.length.toLocaleString('pt-BR')+' cliente'+(l.length===1?'':'s');
   $('tCli').innerHTML=l.length?l.slice(0,S.pagCli).map(c=>'<tr class="clk" data-cpf="'+esc(c.cpf)+'" tabindex="0"><td>'+esc(c.nome)+'<div class="mut">'+esc(c.email)+'</div></td><td class="num">'+esc(cpfFmt(c.cpf))+'</td><td class="num">'+c.envios.length+'</td><td class="num">'+(c.pend?'<span class="pill p">'+c.pend+'</span>':'0')+'</td><td class="num">'+c.ok+'</td><td class="num">'+esc(fmt(c.ultimo))+'</td></tr>').join('')
