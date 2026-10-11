@@ -166,7 +166,7 @@ tr.clk:hover td{background:var(--soft)}
       <div class="bar">
         <label class="busca" for="q"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
           <input id="q" type="search" placeholder="Buscar por nome, CPF, e-mail, nº do pedido ou OS" autocomplete="off"></label>
-        <div class="tabs"><button type="button" data-t="pend" aria-pressed="true">Pendentes</button><button type="button" data-t="ok" aria-pressed="false">Com OS</button><button type="button" data-t="all" aria-pressed="false">Todos</button></div>
+        <div class="tabs"><button type="button" data-t="pend" aria-pressed="true">Pendentes</button><button type="button" data-t="ok" aria-pressed="false">Com OS</button><button type="button" data-t="all" aria-pressed="false">Todos</button><button type="button" data-t="inat" id="tabInat" aria-pressed="false" hidden>Inativos</button></div>
         <select id="ord" aria-label="Ordem"><option value="old">Mais antigos primeiro</option><option value="new">Mais recentes primeiro</option></select>
         <button class="ghost" id="btnAtualizar" type="button">Atualizar</button>
       </div>
@@ -276,7 +276,7 @@ $('fTroca').addEventListener('submit',async e=>{e.preventDefault();const er=$('e
   try{await run('trocarSenha',$('tAtual').value,$('tNova').value);['tAtual','tNova','tNova2'].forEach(x=>$(x).value='');er.textContent='';toast('Senha alterada');entrarApp()}catch(x){er.textContent=msg(x)}});
 $('btnSair').onclick=async()=>{try{await call('sair',S.token)}catch(_){};sairLocal()};
 
-function entrarApp(){$('euNome').textContent=S.eu.nome;$('navEquipe').hidden=!S.eu.admin;tela('app');carregar()}
+function entrarApp(){$('euNome').textContent=S.eu.nome;$('navEquipe').hidden=!S.eu.admin;$('tabInat').hidden=!S.eu.admin;tela('app');carregar()}
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.nav button').forEach(x=>x.setAttribute('aria-pressed',x===b));
@@ -286,7 +286,7 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
 });
 
 async function carregar(aviso){
-  try{const r=await run('listar');S.itens=r.itens;S.clientes=r.clientes||[];render();if(!$('vCli').hidden)renderCli();if(aviso)toast('Fila atualizada')}
+  try{const r=await run('listar');S.itens=r.itens.filter(i=>!i.inativo);S.inativos=r.itens.filter(i=>i.inativo);S.clientes=r.clientes||[];render();if(!$('vCli').hidden)renderCli();if(aviso)toast('Fila atualizada')}
   catch(e){if(S.token)$('lista').innerHTML='<div class="vazio"><strong>Não foi possível carregar</strong>'+esc(msg(e))+'</div>'}
 }
 $('btnAtualizar').onclick=()=>carregar(true);
@@ -311,7 +311,7 @@ function render(){
   const pend=S.itens.filter(i=>!temOS(i)),ok=S.itens.filter(temOS),hoje=new Date().toDateString();
   $('sPend').textContent=pend.length.toLocaleString('pt-BR');$('sOk').textContent=ok.length.toLocaleString('pt-BR');
   $('sAll').textContent=S.itens.length.toLocaleString('pt-BR');$('sHoje').textContent=ok.filter(i=>i.osEm&&new Date(i.osEm).toDateString()===hoje).length;
-  let l=S.fData?ok.filter(i=>diaLocal(i.osEm)===S.fData):(S.tab==='pend'?pend:S.tab==='ok'?ok:S.itens.slice());
+  let l=S.fData?ok.filter(i=>diaLocal(i.osEm)===S.fData):(S.tab==='pend'?pend:S.tab==='ok'?ok:S.tab==='inat'?(S.inativos||[]).slice():S.itens.slice());
   if(S.fTipo)l=l.filter(i=>S.fTipo==='_sem'?!i.tipo:i.tipo===S.fTipo);
   $('fLimpar').hidden=!S.fData&&!S.fTipo;
   document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',!S.fData&&x.dataset.t===S.tab));
@@ -343,7 +343,7 @@ function linha(i){
   const acoes='<div class="acoes" data-id="'+esc(i.id)+'">'
     +(tem&&ab!=='editar'?'<button class="lk" type="button" data-a="editar">Alterar OS</button><button class="lk" type="button" data-a="dev">Devolver para a fila</button>':'')
     +'<button class="lk" type="button" data-a="nota">'+(i.nota?'Editar nota':'Nota interna')+'</button>'
-    +'<button class="lk" type="button" data-a="hist">'+(ab==='hist'?'Ocultar histórico':'Ver histórico')+'</button></div>';
+    +'<button class="lk" type="button" data-a="hist">'+(ab==='hist'?'Ocultar histórico':'Ver histórico')+'</button>'+(S.eu&&S.eu.admin?(i.inativo?'<span class="mut">'+esc(i.inativo)+'</span><button class="lk" type="button" data-a="reativar">Reativar</button>':'<button class="lk" type="button" data-a="inativar">Inativar</button>')+'<button class="lk" type="button" data-a="excluir">Excluir</button>':'')+'</div>';
   let extra='';
   if(ab==='nota')extra='<div class="extra"><form class="notaf" data-id="'+esc(i.id)+'" style="display:flex;gap:8px;flex-wrap:wrap"><textarea id="n-'+esc(i.id)+'" rows="2" style="flex:1 1 300px;min-width:0" maxlength="1000" placeholder="Nota interna, visível só para a equipe">'+esc(i.nota)+'</textarea><button type="submit">Salvar nota</button><button type="button" class="ghost" data-a="fechaExtra" data-id="'+esc(i.id)+'">Cancelar</button></form></div>';
   if(ab==='hist'){const h=S.hist[i.id];extra='<div class="extra">'+(!h?'<span class="mut">Carregando histórico…</span>':!h.length?'<span class="mut">Sem registros.</span>':'<ul class="tl">'+h.map(x=>'<li><span class="mut num">'+esc(fmt(x.data))+'</span><span><span class="q">'+esc(x.nome)+'</span> · '+esc(x.acao)+(x.det?' <span class="mut">· '+esc(x.det)+'</span>':'')+'</span></li>').join('')+'</ul>')+'</div>'}
@@ -368,7 +368,7 @@ $('lista').addEventListener('click',async e=>{
   if(a==='ver'){abrirArquivo(b.dataset.url,b.dataset.nome);return}
   if(a==='ficha'){abrirFicha(b.dataset.cpf);return}
   const box=b.closest('[data-id]'),id=b.dataset.id||(box&&box.dataset.id);
-  if(a==='editar'){S.abertos[id]='editar';render();return}
+  if(a==='inativar'||a==='reativar'||a==='excluir'){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);const nm=it?it.nome+(it.pedido?' · pedido '+it.pedido:''):id;let mot='';if(a==='reativar'){if(!confirm('Reativar o envio de '+nm+'?'))return}else if(a==='inativar'){mot=prompt('Inativar o envio de '+nm+'? Ele sai da fila e das contagens, mas fica guardado na aba Inativos. Motivo (ex.: teste, duplicado):','');if(mot===null)return}else{if(prompt('EXCLUIR DEFINITIVAMENTE o envio de '+nm+'? Isso não pode ser desfeito. Os dados ficam registrados no Histórico e os arquivos continuam no Drive. Digite EXCLUIR para confirmar:','')!=='EXCLUIR'){toast('Exclusão cancelada');return}mot=prompt('Motivo da exclusão (ex.: teste, duplicado):','')||''}b.disabled=true;try{await run(a==='inativar'?'inativarEnvio':a==='reativar'?'reativarEnvio':'excluirEnvio',id,mot);toast(a==='inativar'?'Envio inativado':a==='reativar'?'Envio reativado':'Envio excluído');await carregar()}catch(x){b.disabled=false;toast(msg(x))}return}if(a==='editar'){S.abertos[id]='editar';render();return}
   if(a==='edPed'){S.abertos['ped-'+id]='ed';render();return}
   if(a==='cancPed'){delete S.abertos['ped-'+id];render();return}
   if(a==='cancelaEd'||a==='fechaExtra'){delete S.abertos[id];render();return}
