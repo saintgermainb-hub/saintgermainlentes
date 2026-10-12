@@ -480,5 +480,36 @@ $('tUsers').addEventListener('click',async e=>{const b=e.target.closest('button[
   if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;$('uEmail').value=u.email||'';S.editLogin=u.login;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
   try{S.users=await run('salvarUsuario',{nome:u.nome,login:u.login,admin:u.admin,ativo:b.dataset.u==='on'});renderUsers();toast(b.dataset.u==='on'?'Acesso reativado':'Acesso desativado')}catch(x){toast(msg(x))}});
 </script>
+<style>
+/* Olhinho: mostrar/ocultar senha */
+.olho-wrap{position:relative;display:block;min-width:0}
+.olho-wrap>input{width:100%!important;margin:0!important;padding-right:46px!important;box-sizing:border-box}
+.olho-wrap>button.olho{position:absolute!important;right:0!important;top:0!important;bottom:0!important;left:auto!important;width:44px!important;min-width:0!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;display:flex!important;align-items:center;justify-content:center;background:transparent!important;border:0!important;box-shadow:none!important;color:#5b5b60!important;cursor:pointer;letter-spacing:0!important;opacity:1!important}
+.olho-wrap>button.olho:hover,.olho-wrap>button.olho:focus-visible{color:#000000!important}
+.olho-wrap>button.olho svg{width:18px;height:18px;display:block}
+</style>
+<script>
+/* Olhinho: coloca o botão de mostrar/ocultar em todo campo de senha, inclusive nos que aparecem depois */
+(function(){
+  var ABERTO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var FECHADO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10.5 7 10.5 7a17.6 17.6 0 0 1-3.2 3.9M6.6 6.6C3.4 8.6 1.5 12 1.5 12S5.5 19 12 19a10.6 10.6 0 0 0 5.4-1.5"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  function aplicar(inp){
+    if(inp.dataset.olho) return; inp.dataset.olho='1';
+    var cs=getComputedStyle(inp), w=document.createElement('span');
+    w.className='olho-wrap'; w.style.flex=cs.flex; w.style.margin=cs.margin; w.style.gridColumn=cs.gridColumn;
+    inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+    var b=document.createElement('button'); b.type='button'; b.className='olho'; b.tabIndex=0;
+    b.setAttribute('aria-label','Mostrar senha'); b.title='Mostrar senha'; b.innerHTML=ABERTO;
+    b.addEventListener('click',function(e){ e.preventDefault(); var ver=inp.type==='password';
+      inp.type=ver?'text':'password'; b.innerHTML=ver?FECHADO:ABERTO;
+      var t=ver?'Ocultar senha':'Mostrar senha'; b.setAttribute('aria-label',t); b.title=t; inp.focus(); });
+    w.appendChild(b);
+    if(inp.form) inp.form.addEventListener('submit',function(){ if(inp.type==='text'){ inp.type='password'; b.innerHTML=ABERTO; b.setAttribute('aria-label','Mostrar senha'); b.title='Mostrar senha'; } });
+  }
+  function varrer(){ document.querySelectorAll('input[type=password]:not([data-olho])').forEach(aplicar); }
+  varrer(); new MutationObserver(varrer).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>
