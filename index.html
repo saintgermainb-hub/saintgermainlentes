@@ -134,7 +134,17 @@ tr.clk:hover td{background:var(--soft)}
     <input id="lLogin" placeholder="Usuário" autocomplete="username" autocapitalize="off" required>
     <input id="lSenha" type="password" placeholder="Senha" autocomplete="current-password" required>
     <button type="submit">Entrar</button>
+    <button type="button" class="ghost" id="btnEsqueci">Esqueci minha senha</button>
     <div class="erro" id="eLogin"></div>
+  </form>
+
+  <form class="box" id="fEsqueci" hidden>
+    <div class="k" style="margin:0">Esqueci minha senha</div>
+    <div class="mut">Informe seu usuário ou o e-mail cadastrado. Enviaremos uma senha temporária para o seu e-mail. Ao entrar com ela, você cria uma senha nova.</div>
+    <input id="eqId" placeholder="Usuário ou e-mail" autocomplete="username" autocapitalize="off" required>
+    <button type="submit">Enviar senha temporária</button>
+    <button type="button" class="ghost" id="eqVoltar">Voltar</button>
+    <div class="erro" id="eEsqueci"></div>
   </form>
 
   <form class="box" id="fTroca" hidden>
@@ -212,13 +222,14 @@ tr.clk:hover td{background:var(--soft)}
       <form class="form-u" id="fUser">
         <input id="uNome" placeholder="Nome (ex.: Gilvana)" required>
         <input id="uLogin" placeholder="Usuário (ex.: gilvana)" autocapitalize="off" required>
+        <input id="uEmail" type="email" placeholder="E-mail (para o Esqueci minha senha)" autocapitalize="off" required>
         <input id="uSenha" type="password" placeholder="Senha inicial" autocomplete="new-password">
         <label><input type="checkbox" id="uAdmin"> Administradora</label>
         <button type="submit" id="uBtn">Criar acesso</button>
         <button type="button" class="ghost" id="uLimpar" hidden>Cancelar edição</button>
         <div class="erro" id="eUser" style="flex-basis:100%"></div>
       </form>
-      <div class="tab"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody id="tUsers"></tbody></table></div>
+      <div class="tab"><table><thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody id="tUsers"></tbody></table></div>
     </section>
   </div>
 </div>
@@ -249,7 +260,7 @@ async function call(fn,...a){
 }
 async function run(fn,...a){try{return await call(fn,S.token,...a)}catch(e){if(/sess[aã]o expirou/i.test(msg(e))){sairLocal();toast('Sua sessão expirou. Entre novamente.')}throw e}}
 
-function tela(id){['fSetup','fLogin','fTroca','app'].forEach(x=>$(x).hidden=x!==id);$('quem').hidden=!S.eu||!(id==='app'||id==='fTroca')}
+function tela(id){['fSetup','fLogin','fEsqueci','fTroca','app'].forEach(x=>$(x).hidden=x!==id);$('quem').hidden=!S.eu||!(id==='app'||id==='fTroca')}
 function sairLocal(){S.token='';S.eu=null;try{sessionStorage.removeItem('sg-t');sessionStorage.removeItem('sg-u')}catch(_){};tela('fLogin')}
 
 (async()=>{
@@ -267,7 +278,12 @@ $('fLogin').addEventListener('submit',async e=>{e.preventDefault();const er=$('e
   try{const r=await call('entrar',$('lLogin').value,$('lSenha').value);guardar(r);er.textContent='';$('lSenha').value='';
     if(r.trocarSenha)abrirTroca(true);else entrarApp()}catch(x){er.textContent=msg(x)}});
 
-function abrirTroca(obrig){$('trocaDica').textContent=obrig?'Primeiro acesso: troque a senha inicial por uma senha só sua.':'Defina uma nova senha.';$('tCancelar').hidden=!!obrig;$('euNome').textContent=S.eu.nome;tela('fTroca')}
+$('btnEsqueci').onclick=()=>{$('eqId').value=$('lLogin').value;$('eEsqueci').textContent='';tela('fEsqueci');$('eqId').focus()};
+$('eqVoltar').onclick=()=>{$('eLogin').textContent='';tela('fLogin')};
+$('fEsqueci').addEventListener('submit',async e=>{e.preventDefault();const er=$('eEsqueci'),b=e.target.querySelector('button[type=submit]');er.style.color='';er.textContent='Enviando…';b.disabled=true;
+  try{er.textContent=await call('esqueciSenha',$('eqId').value);er.style.color='var(--fg)';$('lLogin').value=$('eqId').value.includes('@')?'':$('eqId').value}catch(x){er.textContent=msg(x)}b.disabled=false});
+
+function abrirTroca(obrig){$('tAtual').placeholder=obrig?'Senha atual ou senha temporária':'Senha atual';$('trocaDica').textContent=obrig?'Crie agora uma senha nova, só sua. Use como senha atual a senha inicial ou a temporária que chegou no seu e-mail.':'Defina uma nova senha.';$('tCancelar').hidden=!!obrig;$('euNome').textContent=S.eu.nome;tela('fTroca')}
 $('btnSenha').onclick=()=>abrirTroca(false);
 $('tCancelar').onclick=()=>tela('app');
 $('fTroca').addEventListener('submit',async e=>{e.preventDefault();const er=$('eTroca');
@@ -450,18 +466,18 @@ async function carregarUsers(){try{S.users=await run('listarUsuarios');renderUse
 $('fConfig').addEventListener('submit',async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;
   try{const c=await run('salvarConfig',{prazoDias:$('cPrazo').value});$('cInfo').textContent='Atual: até '+c.prazoDias+' dias úteis.';toast('Prazo salvo: '+c.prazoDias+' dias úteis. O link do cliente já mostra o novo prazo.')}catch(x){toast(msg(x))}b.disabled=false});
 function renderUsers(){
-  $('tUsers').innerHTML=S.users.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.login)+'</td><td>'+(u.admin?'Administradora':'Equipe')+'</td><td>'+(u.ativo?'<span class="pill o">Ativo</span>':'<span class="pill p">Desativado</span>')+'</td><td style="white-space:nowrap"><button class="lk" type="button" data-u="ed" data-l="'+esc(u.login)+'">Editar</button>'
+  $('tUsers').innerHTML=S.users.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.login)+'</td><td>'+(u.email?esc(u.email):'<span class="pill p">Sem e-mail</span>')+'</td><td>'+(u.admin?'Administradora':'Equipe')+'</td><td>'+(u.ativo?'<span class="pill o">Ativo</span>':'<span class="pill p">Desativado</span>')+'</td><td style="white-space:nowrap"><button class="lk" type="button" data-u="ed" data-l="'+esc(u.login)+'">Editar</button>'
     +(u.login!==S.eu.login?' &nbsp; <button class="lk" type="button" data-u="'+(u.ativo?'off':'on')+'" data-l="'+esc(u.login)+'">'+(u.ativo?'Desativar':'Reativar')+'</button>':'')+'</td></tr>').join('');
 }
-function limparUser(){['uNome','uLogin','uSenha'].forEach(x=>$(x).value='');$('uAdmin').checked=false;$('uLogin').disabled=false;S.editLogin='';$('uBtn').textContent='Criar acesso';$('uLimpar').hidden=true;$('uSenha').placeholder='Senha inicial';$('eUser').textContent=''}
+function limparUser(){['uNome','uLogin','uEmail','uSenha'].forEach(x=>$(x).value='');$('uAdmin').checked=false;$('uLogin').disabled=false;S.editLogin='';$('uBtn').textContent='Criar acesso';$('uLimpar').hidden=true;$('uSenha').placeholder='Senha inicial';$('eUser').textContent=''}
 $('uLimpar').onclick=limparUser;
 $('fUser').addEventListener('submit',async e=>{e.preventDefault();const er=$('eUser');er.textContent='Salvando…';
   const editando=!!S.editLogin,u=S.users.find(x=>x.login===S.editLogin),eraEu=editando&&S.editLogin===S.eu.login;
-  try{S.users=await run('salvarUsuario',{nome:$('uNome').value,login:$('uLogin').value,loginAntigo:S.editLogin||$('uLogin').value,senha:$('uSenha').value,admin:$('uAdmin').checked,ativo:editando&&u?u.ativo:true});
+  try{S.users=await run('salvarUsuario',{nome:$('uNome').value,login:$('uLogin').value,email:$('uEmail').value,loginAntigo:S.editLogin||$('uLogin').value,senha:$('uSenha').value,admin:$('uAdmin').checked,ativo:editando&&u?u.ativo:true});
     if(eraEu){const nl=norm($('uLogin').value.trim()).replace(/[^a-z0-9._-]/g,''),novo=S.users.find(x=>x.login===nl);if(novo){S.eu=Object.assign({},S.eu,{login:novo.login,nome:novo.nome});$('euNome').textContent=S.eu.nome;try{sessionStorage.setItem('sg-u',JSON.stringify(S.eu))}catch(_){}}}
     renderUsers();limparUser();toast(editando?'Acesso atualizado':'Acesso criado. Passe o usuário e a senha inicial para a pessoa.')}catch(x){er.textContent=msg(x)}});
 $('tUsers').addEventListener('click',async e=>{const b=e.target.closest('button[data-u]');if(!b)return;const u=S.users.find(x=>x.login===b.dataset.l);
-  if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;S.editLogin=u.login;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
+  if(b.dataset.u==='ed'){$('uNome').value=u.nome;$('uLogin').value=u.login;$('uEmail').value=u.email||'';S.editLogin=u.login;$('uAdmin').checked=u.admin;$('uSenha').value='';$('uSenha').placeholder='Nova senha (vazio mantém a atual)';$('uBtn').textContent='Salvar alterações';$('uLimpar').hidden=false;$('uNome').focus();return}
   try{S.users=await run('salvarUsuario',{nome:u.nome,login:u.login,admin:u.admin,ativo:b.dataset.u==='on'});renderUsers();toast(b.dataset.u==='on'?'Acesso reativado':'Acesso desativado')}catch(x){toast(msg(x))}});
 </script>
 </body>
