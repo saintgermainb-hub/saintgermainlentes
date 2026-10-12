@@ -83,6 +83,8 @@ td{border-bottom:1px solid var(--g3);padding:10px 8px;vertical-align:top}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;flex-direction:column;z-index:10}
 .modal .top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;color:#fff;gap:12px}
 .modal .top span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal .top .mbtns{display:flex;gap:8px;flex:none;overflow:visible}
+.modal #mOrig{background:transparent;color:#fff;border-color:#fff}
 .modal .top button{background:#fff;color:#000;border-color:#fff}
 .modal .corpo{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:0 16px 16px}
 .modal img{max-width:100%;max-height:100%;background:#fff}
@@ -234,7 +236,7 @@ tr.clk:hover td{background:var(--soft)}
   </div>
 </div>
 
-<div class="modal" id="modal" hidden><div class="top"><span id="mNome"></span><button type="button" id="mFechar">Fechar</button></div><div class="corpo" id="mCorpo"></div></div>
+<div class="modal" id="modal" hidden><div class="top"><span id="mNome"></span><span class="mbtns"><button type="button" id="mOrig" hidden>Ver original</button><button type="button" id="mFechar">Fechar</button></span></div><div class="corpo" id="mCorpo"></div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -344,6 +346,7 @@ function render(){
   el.innerHTML=l.slice(0,S.pag).map(linha).join('');
   for(const k in rasc){const x=$(k);if(x)x.value=rasc[k]}
   $('btnMais').hidden=l.length<=S.pag;$('btnMais').textContent='Mostrar mais ('+(l.length-S.pag)+' restantes)';
+  clearTimeout(render.pre);render.pre=setTimeout(preCarregarVisiveis,400);
 }
 const arqs=(a,r)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
 function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(i.os):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
@@ -396,15 +399,41 @@ $('lista').addEventListener('click',async e=>{
   if(a==='sim'){try{await run('devolverParaFila',id);Object.assign(item(id),{os:'',resp:'',osEm:'',status:'Pendente'});delete S.hist[id];render();toast('Envio devolvido para a fila')}catch(x){toast(msg(x))}}
 });
 
-async function abrirArquivo(url,nome){
-  $('mNome').textContent=nome+' · carregando…';$('mCorpo').innerHTML='';$('modal').hidden=false;
-  try{const f=await run('verArquivo',url);$('mNome').textContent=nome+' · '+f.nome;
+/* Arquivos: cache em memória + pré-carregamento em segundo plano para abrir na hora */
+const ARQ=new Map(),ARQ_MAX=60;
+function buscarArq(url,modo){
+  const k=(modo||'r')+'|'+url;
+  if(ARQ.has(k)){const v=ARQ.get(k);ARQ.delete(k);ARQ.set(k,v);return v}
+  const p=run('verArquivo',url,modo||'').then(f=>{
     const bin=atob(f.data),arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-    const src=URL.createObjectURL(new Blob([arr],{type:f.tipo}));
-    $('mCorpo').innerHTML=/pdf/i.test(f.tipo)?'<iframe title="'+esc(nome)+'" src="'+src+'"></iframe>':/^image\//.test(f.tipo)?'<img alt="'+esc(nome)+'" src="'+src+'">':'<span style="color:#fff">Formato sem pré-visualização ('+esc(f.tipo)+'). Abra pela pasta no Drive.</span>';
+    return {nome:f.nome,tipo:f.tipo,reduzida:!!f.reduzida,src:URL.createObjectURL(new Blob([arr],{type:f.tipo}))};
+  });
+  p.catch(()=>ARQ.delete(k));
+  ARQ.set(k,p);
+  while(ARQ.size>ARQ_MAX){const [k0,v0]=ARQ.entries().next().value;ARQ.delete(k0);v0.then(x=>URL.revokeObjectURL(x.src)).catch(()=>{})}
+  return p;
+}
+const FILA_PRE=[];let preAtivos=0;
+function preCarregar(urls){
+  urls.forEach(u=>{if(!ARQ.has('r|'+u)&&!FILA_PRE.includes(u))FILA_PRE.push(u)});
+  while(preAtivos<3&&FILA_PRE.length){const u=FILA_PRE.shift();if(ARQ.has('r|'+u))continue;preAtivos++;
+    buscarArq(u).catch(()=>{}).finally(()=>{preAtivos--;preCarregar([])})}
+}
+function preCarregarVisiveis(){
+  if(!S.token)return;
+  const us=[...document.querySelectorAll('#lista button[data-a="ver"]')].slice(0,16).map(b=>b.dataset.url);
+  FILA_PRE.length=0;preCarregar(us);
+}
+async function abrirArquivo(url,nome,modo){
+  const k=(modo||'r')+'|'+url,pronto=ARQ.has(k);
+  $('mNome').textContent=nome+(pronto?'':' · carregando…');if(!pronto)$('mCorpo').innerHTML='';$('modal').hidden=false;
+  try{const f=await buscarArq(url,modo);if($('modal').hidden)return;
+    $('mNome').textContent=nome+' · '+f.nome;
+    $('mCorpo').innerHTML=/pdf/i.test(f.tipo)?'<iframe title="'+esc(nome)+'" src="'+f.src+'"></iframe>':/^image\//.test(f.tipo)?'<img alt="'+esc(nome)+'" src="'+f.src+'">':'<span style="color:#fff">Formato sem pré-visualização ('+esc(f.tipo)+'). Abra pela pasta no Drive.</span>';
+    $('mOrig').hidden=!f.reduzida;$('mOrig').onclick=()=>abrirArquivo(url,nome,'original');
   }catch(x){$('mNome').textContent=nome;$('mCorpo').innerHTML='<span style="color:#fff">'+esc(msg(x))+'</span>'}
 }
-$('mFechar').onclick=()=>{$('modal').hidden=true;$('mCorpo').innerHTML=''};
+$('mFechar').onclick=()=>{$('modal').hidden=true;$('mCorpo').innerHTML='';$('mOrig').hidden=true};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('modal').hidden)$('mFechar').click()});
 
 /* ---------- clientes ---------- */
