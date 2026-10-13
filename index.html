@@ -255,9 +255,13 @@ async function call(fn,...a){
   let ult;
   for(let t=0;t<3;t++){
     try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:corpo});const j=await r.json();
-      if(!j.ok)throw Object.assign(new Error(j.erro||'Erro inesperado.'),{servidor:true});return j.resultado}
+      if(!j.ok){const er=Object.assign(new Error(j.erro||'Erro inesperado.'),{servidor:true});
+        if(/bloqueio|grava[cç][oõ]es agora/i.test(er.message)&&t<2){ult=er;await new Promise(ok=>setTimeout(ok,2000+Math.random()*2000));continue}
+        throw er}
+      return j.resultado}
     catch(e){if(e.servidor)throw e;ult=e;await new Promise(ok=>setTimeout(ok,1500))}
   }
+  if(ult&&ult.servidor)throw ult;
   throw new Error('Sem conexão com o servidor. Verifique a internet e tente de novo.');
 }
 async function run(fn,...a){try{return await call(fn,S.token,...a)}catch(e){if(/sess[aã]o expirou/i.test(msg(e))){sairLocal();toast('Sua sessão expirou. Entre novamente.')}throw e}}
@@ -416,12 +420,12 @@ function buscarArq(url,modo){
 const FILA_PRE=[];let preAtivos=0;
 function preCarregar(urls){
   urls.forEach(u=>{if(!ARQ.has('r|'+u)&&!FILA_PRE.includes(u))FILA_PRE.push(u)});
-  while(preAtivos<3&&FILA_PRE.length){const u=FILA_PRE.shift();if(ARQ.has('r|'+u))continue;preAtivos++;
+  while(preAtivos<1&&FILA_PRE.length){const u=FILA_PRE.shift();if(ARQ.has('r|'+u))continue;preAtivos++;
     buscarArq(u).catch(()=>{}).finally(()=>{preAtivos--;preCarregar([])})}
 }
 function preCarregarVisiveis(){
   if(!S.token)return;
-  const us=[...document.querySelectorAll('#lista button[data-a="ver"]')].slice(0,16).map(b=>b.dataset.url);
+  const us=[...document.querySelectorAll('#lista button[data-a="ver"]')].slice(0,8).map(b=>b.dataset.url);
   FILA_PRE.length=0;preCarregar(us);
 }
 async function abrirArquivo(url,nome,modo){
