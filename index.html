@@ -58,6 +58,11 @@ input:focus,textarea:focus{outline:none;border-color:var(--fg)}
 .pill.o{background:var(--okbg);color:var(--ok)}
 .osf{display:flex;flex-wrap:wrap;gap:8px}
 .osf input{flex:1 1 110px;min-width:0}
+.pedf input.obrig{border-color:var(--pend);outline:1px solid var(--pend)}
+.osf select.labsel{flex:1 1 130px;min-width:0}
+.osf select.labsel:invalid{color:var(--pend);border-color:var(--pend)}
+.lab{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;border:1px solid #aea9b4;color:#414142;width:max-content}
+.lab.sem{border-style:dashed;color:#5b5b60}
 .feito{display:grid;gap:4px}
 .feito .big{font-size:16px}
 .acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
@@ -184,6 +189,7 @@ tr.clk:hover td{background:var(--soft)}
       </div>
       <div class="filtros">
         <label for="fTipo">Tipo <select id="fTipo"><option value="">Todos</option><option>Influenciador</option><option>Embaixadores</option><option>Cliente site</option><option>Diretoria</option><option value="_sem">Sem tipo</option></select></label>
+        <label for="fLab">Laboratório <select id="fLab"><option value="">Todos</option><option>Repro</option><option>Iguaçu</option><option>Primie</option><option value="_sem">Sem laboratório</option></select></label>
         <label for="fData">OS lançada em <input type="date" id="fData"></label>
         <button type="button" class="ghost" id="fHoje">Hoje</button>
         <button type="button" class="ghost" id="fLimpar" hidden>Limpar filtros</button>
@@ -241,7 +247,7 @@ tr.clk:hover td{background:var(--soft)}
 
 <script>
 const $=id=>document.getElementById(id);
-const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
+const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fLab:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const dig=s=>String(s??'').replace(/\D/g,'');
@@ -320,13 +326,17 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{S.tab=b.data
 $('btnMais').onclick=()=>{S.pag+=60;render()};
 
 const temOS=i=>!!String(i.os||'').trim();
+const LABS=['Repro','Iguaçu','Primie'];
+const labDe=os=>{const n=norm(String(os||'').split('|').slice(1).join(' ')+' '+(String(os||'').includes('|')?'':os));return /repro/.test(n)?'Repro':/iguacu/.test(n)?'Iguaçu':/prim/.test(n)?'Primie':''};
+const numOS=os=>String(os||'').split('|')[0].trim();
 const TIPOS=['Influenciador','Embaixadores','Cliente site','Diretoria'];
 const diaLocal=iso=>{if(!iso)return'';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const tipoSel=i=>'<select class="tiposel'+(i.tipo?'':' vazio-t')+'" data-id="'+esc(i.id)+'" aria-label="Tipo do pedido"><option value="">'+(i.tipo?'Sem tipo':'Escolher tipo do pedido…')+'</option>'+TIPOS.map(t=>'<option'+(i.tipo===t?' selected':'')+'>'+t+'</option>').join('')+'</select>';
 $('fTipo').onchange=e=>{S.fTipo=e.target.value;S.pag=60;render()};
+$('fLab').onchange=e=>{S.fLab=e.target.value;S.pag=60;render()};
 $('fData').onchange=e=>{S.fData=e.target.value;S.pag=60;render()};
 $('fHoje').onclick=()=>{S.fData=diaLocal(new Date().toISOString());$('fData').value=S.fData;S.pag=60;render()};
-$('fLimpar').onclick=()=>{S.fData='';S.fTipo='';$('fData').value='';$('fTipo').value='';render()};
+$('fLimpar').onclick=()=>{S.fData='';S.fTipo='';S.fLab='';$('fData').value='';$('fTipo').value='';$('fLab').value='';render()};
 $('lista').addEventListener('change',async e=>{const s=e.target.closest('select.tiposel');if(!s)return;const id=s.dataset.id,t=s.value;s.disabled=true;
   try{await run('salvarTipo',id,t);item(id).tipo=t;delete S.hist[id];toast((t||'Sem tipo')+' · salvo por '+S.eu.nome);render()}catch(x){s.disabled=false;toast(msg(x));render()}});
 function render(){
@@ -335,10 +345,11 @@ function render(){
   $('sAll').textContent=S.itens.length.toLocaleString('pt-BR');$('sHoje').textContent=ok.filter(i=>i.osEm&&new Date(i.osEm).toDateString()===hoje).length;
   let l=S.fData?ok.filter(i=>diaLocal(i.osEm)===S.fData):(S.tab==='pend'?pend:S.tab==='ok'?ok:S.tab==='inat'?(S.inativos||[]).slice():S.itens.slice());
   if(S.fTipo)l=l.filter(i=>S.fTipo==='_sem'?!i.tipo:i.tipo===S.fTipo);
-  $('fLimpar').hidden=!S.fData&&!S.fTipo;
+  if(S.fLab)l=l.filter(i=>{const lb=labDe(i.os);return S.fLab==='_sem'?(temOS(i)&&!lb):lb===S.fLab});
+  $('fLimpar').hidden=!S.fData&&!S.fTipo&&!S.fLab;
   document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',!S.fData&&x.dataset.t===S.tab));
-  if(S.fData){const cont={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1});
-    $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('');$('resumo').hidden=false}
+  if(S.fData){const cont={},cl={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1;const lb=labDe(i.os)||'Sem laboratório';cl[lb]=(cl[lb]||0)+1});
+    $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+(S.fLab?' · laboratório: '+esc(S.fLab==='_sem'?'Sem laboratório':S.fLab):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('')+'<span style="flex-basis:100%;height:0;padding:0"></span>'+LABS.concat(['Sem laboratório']).filter(t=>cl[t]).map(t=>'<span>'+esc(t)+': <strong>'+cl[t]+'</strong></span>').join('');$('resumo').hidden=false}
   else $('resumo').hidden=true;
   const q=norm(S.q.trim()),qd=/[a-z@]/i.test(S.q)?'':dig(S.q);
   if(q)l=l.filter(i=>qd?[i.cpf,i.pedido,i.os].some(x=>dig(x)===qd):[i.nome,i.email,i.pedido,i.os,i.id].some(x=>norm(x).includes(q)));
@@ -352,16 +363,17 @@ function render(){
   $('btnMais').hidden=l.length<=S.pag;$('btnMais').textContent='Mostrar mais ('+(l.length-S.pag)+' restantes)';
   clearTimeout(render.pre);render.pre=setTimeout(preCarregarVisiveis,400);
 }
-const arqs=(a,r)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
-function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(i.os):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
+const arqs=(a,r,id)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-id="'+esc(id||'')+'" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
+const exigePedido=id=>{const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);return it&&!String(it.pedido||'').trim()};
+function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(numOS(i.os)):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><select class="labsel" name="lab" aria-label="Laboratório" required><option value="">Laboratório…</option>'+LABS.map(t=>'<option'+(editar&&labDe(i.os)===t?' selected':'')+'>'+t+'</option>').join('')+'</select><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
 function pedidoHTML(i){
   if(i.pedido&&S.abertos['ped-'+i.id]!=='ed')return '<div class="num">'+esc(i.pedido)+'</div><button class="lk" type="button" data-a="edPed" data-id="'+esc(i.id)+'">Editar pedido</button>';
-  return (i.pedido?'':'<span class="pill p" style="margin-bottom:6px">Sem pedido</span>')+'<form class="pedf" data-id="'+esc(i.id)+'"><input id="pp-'+esc(i.id)+'" name="ped" value="'+esc(i.pedido)+'" placeholder="Incluir nº do pedido" aria-label="Nº do pedido"><button type="submit">Salvar</button>'+(i.pedido?'<button type="button" class="ghost" data-a="cancPed" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>';
+  return (i.pedido?'':'<span class="pill p" style="margin-bottom:6px">Sem pedido</span>')+'<form class="pedf" data-id="'+esc(i.id)+'"><input id="pp-'+esc(i.id)+'" name="ped" value="'+esc(i.pedido)+'" placeholder="Nº do pedido Bling" aria-label="Nº do pedido Bling"><button type="submit">Salvar</button>'+(i.pedido?'<button type="button" class="ghost" data-a="cancPed" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>';
 }
 function linha(i){
   const tem=temOS(i),ab=S.abertos[i.id]||'';
   const dir=tem&&ab!=='editar'
-    ?'<div class="feito"><span class="pill o">OS lançada</span><span class="big num">OS '+esc(i.os)+'</span><span class="mut">Por '+esc(i.resp)+' · '+esc(fmt(i.osEm))+'</span></div>'
+    ?'<div class="feito"><span class="pill o">OS lançada</span><span class="big num">OS '+esc(numOS(i.os))+'</span>'+(labDe(i.os)?'<span class="lab">'+esc(labDe(i.os))+'</span>':'<span class="lab sem">Sem laboratório</span>')+'<span class="mut">Por '+esc(i.resp)+' · '+esc(fmt(i.osEm))+'</span></div>'
     :osForm(i,tem);
   const acoes='<div class="acoes" data-id="'+esc(i.id)+'">'
     +(tem&&ab!=='editar'?'<button class="lk" type="button" data-a="editar">Alterar OS</button><button class="lk" type="button" data-a="dev">Devolver para a fila</button>':'')
@@ -372,14 +384,14 @@ function linha(i){
   if(ab==='hist'){const h=S.hist[i.id];extra='<div class="extra">'+(!h?'<span class="mut">Carregando histórico…</span>':!h.length?'<span class="mut">Sem registros.</span>':'<ul class="tl">'+h.map(x=>'<li><span class="mut num">'+esc(fmt(x.data))+'</span><span><span class="q">'+esc(x.nome)+'</span> · '+esc(x.acao)+(x.det?' <span class="mut">· '+esc(x.det)+'</span>':'')+'</span></li>').join('')+'</ul>')+'</div>'}
   return '<div class="row"><div><button type="button" class="nomebtn" data-a="ficha" data-cpf="'+esc(dig(i.cpf))+'" title="Abrir ficha do cliente">'+esc(i.nome)+'</button><div class="mut">'+esc(i.email)+(i.whats?' · '+esc(i.whats):'')+'</div><div class="mut">Enviado em '+esc(fmt(i.data))+' · '+esc(i.id)+'</div>'+tipoSel(i)+(i.obs?'<div class="mut" style="margin-top:6px">Obs. do cliente: '+esc(i.obs)+'</div>':'')+(i.nota?'<div class="nota">Nota interna: '+esc(i.nota)+'</div>':'')+'</div>'
    +'<div><span class="k">Pedido</span>'+pedidoHTML(i)+'<span class="k" style="margin-top:8px">CPF</span><div class="num">'+esc(cpfFmt(i.cpf))+'</div>'+(tem?'':'<div style="margin-top:8px"><span class="pill p">Pendente</span></div>')+'</div>'
-   +'<div><span class="k">Receita</span><div class="files">'+(arqs(i.receita,'Receita')||'<span class="mut">—</span>')+'</div><span class="k" style="margin-top:10px">DNP</span>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP')+'</div></div>'
+   +'<div><span class="k">Receita</span><div class="files">'+(arqs(i.receita,'Receita',i.id)||'<span class="mut">—</span>')+'</div><span class="k" style="margin-top:10px">DNP</span>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP',i.id)+'</div></div>'
    +'<div>'+dir+acoes+'</div>'+extra+'</div>';
 }
 const item=id=>S.itens.find(x=>x.id===id);
 $('lista').addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target,id=f.dataset.id,b=f.querySelector('button[type=submit]');b.disabled=true;
   try{
-    if(f.classList.contains('osf')){const os=f.os.value.trim(),ped=f.pedido?f.pedido.value.trim():'';if(!os){b.disabled=false;return}
+    if(f.classList.contains('osf')){const n=f.os.value.replace(/\|.*$/,'').trim(),lab=f.lab.value;if(n&&!lab){b.disabled=false;toast('Selecione o laboratório');f.lab.focus();return}const os=n?n+' | '+lab:'',ped=f.pedido?f.pedido.value.trim():'';if(!os){b.disabled=false;return}
       await run('lancarOS',id,os,ped);Object.assign(item(id),{os,pedido:ped||item(id).pedido,resp:S.eu.nome,osEm:new Date().toISOString(),status:'Com OS'});delete S.abertos[id];delete S.hist[id];toast('OS '+os+' salva por '+S.eu.nome)}
     else if(f.classList.contains('pedf')){const p=f.ped.value.trim();if(!p){b.disabled=false;return}await run('salvarPedido',id,p);item(id).pedido=p;delete S.abertos['ped-'+id];delete S.hist[id];toast('Pedido '+p+' salvo por '+S.eu.nome)}
     else if(f.classList.contains('notaf')){const n=f.querySelector('textarea').value.trim();await run('salvarNota',id,n);item(id).nota=n;delete S.abertos[id];delete S.hist[id];toast('Nota salva')}
@@ -388,7 +400,7 @@ $('lista').addEventListener('submit',async e=>{
 });
 $('lista').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='ver'){abrirArquivo(b.dataset.url,b.dataset.nome);return}
+  if(a==='ver'){if(exigePedido(b.dataset.id)){const pid=b.dataset.id;delete S.abertos['ped-'+pid];render();const inp=document.getElementById('pp-'+pid);if(inp){inp.classList.add('obrig');inp.focus();inp.scrollIntoView({block:'center',behavior:'smooth'})}toast('Informe o nº do pedido Bling para abrir a receita');return}abrirArquivo(b.dataset.url,b.dataset.nome);return}
   if(a==='ficha'){abrirFicha(b.dataset.cpf);return}
   const box=b.closest('[data-id]'),id=b.dataset.id||(box&&box.dataset.id);
   if(a==='inativar'||a==='reativar'||a==='excluir'){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);const nm=it?it.nome+(it.pedido?' · pedido '+it.pedido:''):id;let mot='';if(a==='reativar'){if(!confirm('Reativar o envio de '+nm+'?'))return}else if(a==='inativar'){mot=prompt('Inativar o envio de '+nm+'? Ele sai da fila e das contagens, mas fica guardado na aba Inativos. Motivo (ex.: teste, duplicado):','');if(mot===null)return}else{if(prompt('EXCLUIR DEFINITIVAMENTE o envio de '+nm+'? Isso não pode ser desfeito. Os dados ficam registrados no Histórico e os arquivos continuam no Drive. Digite EXCLUIR para confirmar:','')!=='EXCLUIR'){toast('Exclusão cancelada');return}mot=prompt('Motivo da exclusão (ex.: teste, duplicado):','')||''}b.disabled=true;try{await run(a==='inativar'?'inativarEnvio':a==='reativar'?'reativarEnvio':'excluirEnvio',id,mot);toast(a==='inativar'?'Envio inativado':a==='reativar'?'Envio reativado':'Envio excluído');await carregar()}catch(x){b.disabled=false;toast(msg(x))}return}if(a==='editar'){S.abertos[id]='editar';render();return}
@@ -480,12 +492,12 @@ function renderFicha(){
    +'<div class="dados"><div><span class="k">CPF</span><div class="num">'+esc(cpfFmt(c.cpf))+'</div></div><div><span class="k">E-mail</span><div>'+esc(c.email||'—')+'</div></div><div><span class="k">WhatsApp</span><div>'+esc(c.whats||'—')+'</div></div><div><span class="k">Cliente desde</span><div class="num">'+esc(fmt(c.primeiro)||'—')+'</div></div></div>'
    +'<div class="stats"><div class="stat"><div class="n">'+c.envios.length+'</div><div class="l">Receitas enviadas</div></div><div class="stat"><div class="n">'+new Set(c.envios.map(i=>i.pedido).filter(Boolean)).size+'</div><div class="l">Pedidos</div></div><div class="stat"><div class="n">'+c.ok+'</div><div class="l">Com OS</div></div><div class="stat"><div class="n">'+c.pend+'</div><div class="l">Pendentes</div></div></div>'
    +'<div class="tab" style="margin-top:18px"><table><thead><tr><th>Enviado em</th><th>Pedido</th><th>Tipo</th><th>Receita</th><th>DNP</th><th>OS</th><th>Responsável</th><th>Situação</th></tr></thead><tbody>'
-   +c.envios.map(i=>'<tr><td class="num">'+esc(fmt(i.data))+'</td><td class="num">'+esc(i.pedido||'—')+'</td><td>'+esc(i.tipo||'—')+'</td><td><div class="files">'+(arqs(i.receita,'Receita')||'—')+'</div></td><td>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP')+'</div></td><td class="num">'+esc(i.os||'—')+'</td><td>'+esc(i.resp||'—')+(i.osEm?'<div class="mut">'+esc(fmt(i.osEm))+'</div>':'')+'</td><td>'+(temOS(i)?'<span class="pill o">Com OS</span>':'<span class="pill p">Pendente</span>')+(i.nota?'<div class="mut" style="margin-top:4px">Nota: '+esc(i.nota)+'</div>':'')+'</td></tr>').join('')
+   +c.envios.map(i=>'<tr><td class="num">'+esc(fmt(i.data))+'</td><td class="num">'+esc(i.pedido||'—')+'</td><td>'+esc(i.tipo||'—')+'</td><td><div class="files">'+(arqs(i.receita,'Receita',i.id)||'—')+'</div></td><td>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP',i.id)+'</div></td><td class="num">'+esc(i.os||'—')+'</td><td>'+esc(i.resp||'—')+(i.osEm?'<div class="mut">'+esc(fmt(i.osEm))+'</div>':'')+'</td><td>'+(temOS(i)?'<span class="pill o">Com OS</span>':'<span class="pill p">Pendente</span>')+(i.nota?'<div class="mut" style="margin-top:4px">Nota: '+esc(i.nota)+'</div>':'')+'</td></tr>').join('')
    +'</tbody></table></div><div class="mut" style="margin-top:12px">Para lançar ou alterar a OS de um envio pendente, use a aba Fila e busque pelo CPF.</div>';
 }
 $('cliFicha').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.f==='voltar'){S.ficha='';renderCli();return}
-  if(b.dataset.a==='ver')abrirArquivo(b.dataset.url,b.dataset.nome)});
+  if(b.dataset.a==='ver'){if(exigePedido(b.dataset.id)){toast('Informe o nº do pedido Bling na aba Fila (busque pelo CPF) para abrir a receita');return}abrirArquivo(b.dataset.url,b.dataset.nome)}});
 
 async function carregarHist(){
   $('tHist').innerHTML='<tr><td colspan="5" class="mut">Carregando…</td></tr>';
