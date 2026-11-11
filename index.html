@@ -186,6 +186,7 @@ tr.clk:hover td{background:var(--soft)}
         <div class="stat"><div class="n" id="sHoje">0</div><div class="l">OS lançadas hoje</div></div>
         <div class="stat"><div class="n" id="sOk">0</div><div class="l">Com OS</div></div>
         <div class="stat"><div class="n" id="sAll">0</div><div class="l">Total recebido</div></div>
+        <div class="stat"><div class="n" id="sBling">0</div><div class="l">Bling sem OS</div></div>
       </div>
       <div class="bar">
         <label class="busca" for="q"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
@@ -196,6 +197,8 @@ tr.clk:hover td{background:var(--soft)}
       </div>
       <div class="filtros">
         <label for="fTipo">Tipo <select id="fTipo"><option value="">Todos</option><option>Influenciador</option><option>Embaixadores</option><option>Cliente site</option><option>Diretoria</option><option value="_sem">Sem tipo</option></select></label>
+        <label for="fPed">Pedido Bling <select id="fPed"><option value="">Todos</option><option value="sim">Informado</option><option value="nao">Não informado</option></select></label>
+        <button type="button" class="ghost" id="fBlingSemOS" title="Pendentes que já têm nº do pedido Bling e ainda não têm OS">Bling sem OS</button>
         <label for="fLab">Laboratório <select id="fLab"><option value="">Todos</option><option>Repro</option><option>Iguaçu</option><option>Primie</option><option value="_sem">Sem laboratório</option></select></label>
         <label for="fData">OS lançada em <input type="date" id="fData"></label>
         <button type="button" class="ghost" id="fHoje">Hoje</button>
@@ -255,7 +258,7 @@ tr.clk:hover td{background:var(--soft)}
 
 <script>
 const $=id=>document.getElementById(id);
-const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fLab:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
+const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fLab:'',fPed:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const dig=s=>String(s??'').replace(/\D/g,'');
@@ -341,23 +344,27 @@ const TIPOS=['Influenciador','Embaixadores','Cliente site','Diretoria'];
 const diaLocal=iso=>{if(!iso)return'';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const tipoSel=i=>'<select class="tiposel'+(i.tipo?'':' vazio-t')+'" data-id="'+esc(i.id)+'" aria-label="Tipo do pedido"><option value="">'+(i.tipo?'Sem tipo':'Escolher tipo do pedido…')+'</option>'+TIPOS.map(t=>'<option'+(i.tipo===t?' selected':'')+'>'+t+'</option>').join('')+'</select>';
 $('fTipo').onchange=e=>{S.fTipo=e.target.value;S.pag=60;render()};
+$('fPed').onchange=e=>{S.fPed=e.target.value;S.pag=60;render()};
+$('fBlingSemOS').onclick=()=>{S.tab='pend';S.fPed='sim';S.fData='';$('fData').value='';$('fPed').value='sim';S.pag=60;render()};
 $('fLab').onchange=e=>{S.fLab=e.target.value;S.pag=60;render()};
 $('fData').onchange=e=>{S.fData=e.target.value;S.pag=60;render()};
 $('fHoje').onclick=()=>{S.fData=diaLocal(new Date().toISOString());$('fData').value=S.fData;S.pag=60;render()};
-$('fLimpar').onclick=()=>{S.fData='';S.fTipo='';S.fLab='';$('fData').value='';$('fTipo').value='';$('fLab').value='';render()};
+$('fLimpar').onclick=()=>{S.fPed='';$('fPed').value='';S.fData='';S.fTipo='';S.fLab='';$('fData').value='';$('fTipo').value='';$('fLab').value='';render()};
 $('lista').addEventListener('change',async e=>{const s=e.target.closest('select.tiposel');if(!s)return;const id=s.dataset.id,t=s.value;s.disabled=true;
   try{await run('salvarTipo',id,t);item(id).tipo=t;delete S.hist[id];toast((t||'Sem tipo')+' · salvo por '+S.eu.nome);render()}catch(x){s.disabled=false;toast(msg(x));render()}});
 function render(){
   const pend=S.itens.filter(i=>!temOS(i)),ok=S.itens.filter(temOS),hoje=new Date().toDateString();
   $('sPend').textContent=pend.length.toLocaleString('pt-BR');$('sOk').textContent=ok.length.toLocaleString('pt-BR');
-  $('sAll').textContent=S.itens.length.toLocaleString('pt-BR');$('sHoje').textContent=ok.filter(i=>i.osEm&&new Date(i.osEm).toDateString()===hoje).length;
+  $('sAll').textContent=S.itens.length.toLocaleString('pt-BR');$('sBling').textContent=pend.filter(i=>String(i.pedido||'').trim()).length.toLocaleString('pt-BR');$('sHoje').textContent=ok.filter(i=>i.osEm&&new Date(i.osEm).toDateString()===hoje).length;
   let l=S.fData?ok.filter(i=>diaLocal(i.osEm)===S.fData):(S.tab==='pend'?pend:S.tab==='ok'?ok:S.tab==='inat'?(S.inativos||[]).slice():S.itens.slice());
   if(S.fTipo)l=l.filter(i=>S.fTipo==='_sem'?!i.tipo:i.tipo===S.fTipo);
   if(S.fLab)l=l.filter(i=>{const lb=labDe(i.os);return S.fLab==='_sem'?(temOS(i)&&!lb):lb===S.fLab});
-  $('fLimpar').hidden=!S.fData&&!S.fTipo&&!S.fLab;
+  if(S.fPed)l=l.filter(i=>S.fPed==='sim'?!!String(i.pedido||'').trim():!String(i.pedido||'').trim());
+  $('fLimpar').hidden=!S.fData&&!S.fTipo&&!S.fLab&&!S.fPed;
   document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',!S.fData&&x.dataset.t===S.tab));
   if(S.fData){const cont={},cl={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1;const lb=labDe(i.os)||'Sem laboratório';cl[lb]=(cl[lb]||0)+1});
     $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+(S.fLab?' · laboratório: '+esc(S.fLab==='_sem'?'Sem laboratório':S.fLab):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('')+'<span style="flex-basis:100%;height:0;padding:0"></span>'+LABS.concat(['Sem laboratório']).filter(t=>cl[t]).map(t=>'<span>'+esc(t)+': <strong>'+cl[t]+'</strong></span>').join('');$('resumo').hidden=false}
+  else if(S.fPed){const pd=S.tab==='pend';$('resumo').innerHTML='<span><strong>'+l.length+' envio'+(l.length===1?'':'s')+'</strong> '+(S.fPed==='sim'?'com nº do pedido Bling informado':'sem nº do pedido Bling')+(pd?' e sem OS':S.tab==='ok'?' e com OS':'')+'</span>'+(S.fPed==='sim'&&pd?'<span>Abra "Ver histórico" no envio para ver quem informou o pedido e quando.</span>':'');$('resumo').hidden=false}
   else $('resumo').hidden=true;
   const q=norm(S.q.trim()),qd=/[a-z@]/i.test(S.q)?'':dig(S.q);
   if(q)l=l.filter(i=>qd?[i.cpf,i.pedido,i.os].some(x=>dig(x)===qd):[i.nome,i.email,i.pedido,i.os,i.id].some(x=>norm(x).includes(q)));
@@ -372,19 +379,16 @@ function render(){
   clearTimeout(render.pre);render.pre=setTimeout(preCarregarVisiveis,400);
 }
 const arqs=(a,r,id)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-id="'+esc(id||'')+'" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
-const LIBERADO={};
-function pedirPedido(id){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);if(!it||LIBERADO[id])return Promise.resolve(true);
+function pedirPedido(id){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);if(!it||String(it.pedido||'').trim())return Promise.resolve(true);
   return new Promise(res=>{const d=$('pdlg'),f=$('pdlgF'),inp=$('pdlgIn'),er=$('pdlgErr'),ok=$('pdlgOk');
-    $('pdlgTxt').textContent='Para abrir a receita de '+it.nome+', informe o nº do pedido Bling. A abertura fica registrada no Histórico com o seu nome.';
+    $('pdlgTxt').textContent='Para abrir a receita de '+it.nome+', informe o nº do pedido Bling. O nº fica salvo neste envio e registrado no Histórico com o seu nome.';
     inp.value='';er.hidden=true;ok.disabled=false;d.hidden=false;setTimeout(()=>inp.focus(),30);
     const fim=v=>{d.hidden=true;f.onsubmit=null;$('pdlgCanc').onclick=null;d.onkeydown=null;res(v)};
     $('pdlgCanc').onclick=()=>fim(false);d.onkeydown=e=>{if(e.key==='Escape')fim(false)};
     f.onsubmit=async e=>{e.preventDefault();const v=inp.value.trim(),reg=String(it.pedido||'').trim();
       if(!dig(v)){er.textContent='Informe o nº do pedido Bling.';er.hidden=false;return}
-      if(reg&&dig(reg)!==dig(v)){er.textContent='Esse nº não confere com o pedido registrado neste envio. Confira no Bling. Se o pedido do envio estiver errado, use "Editar pedido".';er.hidden=false;inp.select();return}
       ok.disabled=true;
-      try{if(!reg||!temOS(it)){await run('salvarPedido',id,reg||v);it.pedido=reg||v;delete S.hist[id]}
-        LIBERADO[id]=true;fim(true)}catch(x){ok.disabled=false;er.textContent=msg(x);er.hidden=false}}})}
+      try{await run('salvarPedido',id,v);it.pedido=v;delete S.hist[id];toast('Pedido '+v+' salvo por '+S.eu.nome);fim(true)}catch(x){ok.disabled=false;er.textContent=msg(x);er.hidden=false}}})}
 function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(numOS(i.os)):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><select class="labsel" name="lab" aria-label="Laboratório" required><option value="">Laboratório…</option>'+LABS.map(t=>'<option'+(editar&&labDe(i.os)===t?' selected':'')+'>'+t+'</option>').join('')+'</select><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
 function pedidoHTML(i){
   if(i.pedido&&S.abertos['ped-'+i.id]!=='ed')return '<div class="num">'+esc(i.pedido)+'</div><button class="lk" type="button" data-a="edPed" data-id="'+esc(i.id)+'">Editar pedido</button>';
