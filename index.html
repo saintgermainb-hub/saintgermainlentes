@@ -58,6 +58,13 @@ input:focus,textarea:focus{outline:none;border-color:var(--fg)}
 .pill.o{background:var(--okbg);color:var(--ok)}
 .osf{display:flex;flex-wrap:wrap;gap:8px}
 .osf input{flex:1 1 110px;min-width:0}
+.pdlg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
+.pdlg[hidden]{display:none}
+.pdlg form{background:#fff;color:#000;max-width:420px;width:100%;padding:28px 26px;display:grid;gap:12px;border:1px solid #aea9b4}
+.pdlg .t{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#5b5b60}
+.pdlg h2{font-weight:400;font-size:20px;margin:0}
+.pdlg .err{color:var(--erro);font-size:13px}
+.pdlg .bts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .pedf input.obrig{border-color:var(--pend);outline:1px solid var(--pend)}
 .osf select.labsel{flex:1 1 130px;min-width:0}
 .osf select.labsel:invalid{color:var(--pend);border-color:var(--pend)}
@@ -242,6 +249,7 @@ tr.clk:hover td{background:var(--soft)}
   </div>
 </div>
 
+<div class="pdlg" id="pdlg" hidden role="dialog" aria-modal="true" aria-labelledby="pdlgT"><form id="pdlgF" autocomplete="off"><div class="t">Saint Germain · Fila de Lentes</div><h2 id="pdlgT">Nº do pedido Bling</h2><div class="mut" id="pdlgTxt"></div><input id="pdlgIn" inputmode="numeric" placeholder="Nº do pedido Bling" aria-label="Nº do pedido Bling" required><div class="err" id="pdlgErr" hidden></div><div class="bts"><button type="button" class="ghost" id="pdlgCanc">Cancelar</button><button type="submit" id="pdlgOk">Abrir receita</button></div></form></div>
 <div class="modal" id="modal" hidden><div class="top"><span id="mNome"></span><span class="mbtns"><button type="button" id="mOrig" hidden>Ver original</button><button type="button" id="mFechar">Fechar</button></span></div><div class="corpo" id="mCorpo"></div></div>
 <div class="toast" id="toast" hidden></div>
 
@@ -364,7 +372,19 @@ function render(){
   clearTimeout(render.pre);render.pre=setTimeout(preCarregarVisiveis,400);
 }
 const arqs=(a,r,id)=>(a||[]).map((u,i)=>{const n=r+(a.length>1?' '+(i+1):'');return '<button type="button" data-a="ver" data-id="'+esc(id||'')+'" data-url="'+esc(u)+'" data-nome="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
-const exigePedido=id=>{const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);return it&&!String(it.pedido||'').trim()};
+const LIBERADO={};
+function pedirPedido(id){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);if(!it||LIBERADO[id])return Promise.resolve(true);
+  return new Promise(res=>{const d=$('pdlg'),f=$('pdlgF'),inp=$('pdlgIn'),er=$('pdlgErr'),ok=$('pdlgOk');
+    $('pdlgTxt').textContent='Para abrir a receita de '+it.nome+', informe o nº do pedido Bling. A abertura fica registrada no Histórico com o seu nome.';
+    inp.value='';er.hidden=true;ok.disabled=false;d.hidden=false;setTimeout(()=>inp.focus(),30);
+    const fim=v=>{d.hidden=true;f.onsubmit=null;$('pdlgCanc').onclick=null;d.onkeydown=null;res(v)};
+    $('pdlgCanc').onclick=()=>fim(false);d.onkeydown=e=>{if(e.key==='Escape')fim(false)};
+    f.onsubmit=async e=>{e.preventDefault();const v=inp.value.trim(),reg=String(it.pedido||'').trim();
+      if(!dig(v)){er.textContent='Informe o nº do pedido Bling.';er.hidden=false;return}
+      if(reg&&dig(reg)!==dig(v)){er.textContent='Esse nº não confere com o pedido registrado neste envio. Confira no Bling. Se o pedido do envio estiver errado, use "Editar pedido".';er.hidden=false;inp.select();return}
+      ok.disabled=true;
+      try{if(!reg||!temOS(it)){await run('salvarPedido',id,reg||v);it.pedido=reg||v;delete S.hist[id]}
+        LIBERADO[id]=true;fim(true)}catch(x){ok.disabled=false;er.textContent=msg(x);er.hidden=false}}})}
 function osForm(i,editar){return '<form class="osf" data-id="'+esc(i.id)+'"><input id="o-'+esc(i.id)+'" name="os" value="'+(editar?esc(numOS(i.os)):'')+'" placeholder="Nº da OS" aria-label="Nº da OS" required><select class="labsel" name="lab" aria-label="Laboratório" required><option value="">Laboratório…</option>'+LABS.map(t=>'<option'+(editar&&labDe(i.os)===t?' selected':'')+'>'+t+'</option>').join('')+'</select><button type="submit">'+(editar?'Salvar OS':'Lançar OS')+'</button>'+(editar?'<button type="button" class="ghost" data-a="cancelaEd" data-id="'+esc(i.id)+'">Cancelar</button>':'')+'</form>'}
 function pedidoHTML(i){
   if(i.pedido&&S.abertos['ped-'+i.id]!=='ed')return '<div class="num">'+esc(i.pedido)+'</div><button class="lk" type="button" data-a="edPed" data-id="'+esc(i.id)+'">Editar pedido</button>';
@@ -400,7 +420,7 @@ $('lista').addEventListener('submit',async e=>{
 });
 $('lista').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='ver'){if(exigePedido(b.dataset.id)){const pid=b.dataset.id;delete S.abertos['ped-'+pid];render();const inp=document.getElementById('pp-'+pid);if(inp){inp.classList.add('obrig');inp.focus();inp.scrollIntoView({block:'center',behavior:'smooth'})}toast('Informe o nº do pedido Bling para abrir a receita');return}abrirArquivo(b.dataset.url,b.dataset.nome);return}
+  if(a==='ver'){if(!(await pedirPedido(b.dataset.id)))return;render();abrirArquivo(b.dataset.url,b.dataset.nome);return}
   if(a==='ficha'){abrirFicha(b.dataset.cpf);return}
   const box=b.closest('[data-id]'),id=b.dataset.id||(box&&box.dataset.id);
   if(a==='inativar'||a==='reativar'||a==='excluir'){const it=S.itens.concat(S.inativos||[]).find(x=>x.id===id);const nm=it?it.nome+(it.pedido?' · pedido '+it.pedido:''):id;let mot='';if(a==='reativar'){if(!confirm('Reativar o envio de '+nm+'?'))return}else if(a==='inativar'){mot=prompt('Inativar o envio de '+nm+'? Ele sai da fila e das contagens, mas fica guardado na aba Inativos. Motivo (ex.: teste, duplicado):','');if(mot===null)return}else{if(prompt('EXCLUIR DEFINITIVAMENTE o envio de '+nm+'? Isso não pode ser desfeito. Os dados ficam registrados no Histórico e os arquivos continuam no Drive. Digite EXCLUIR para confirmar:','')!=='EXCLUIR'){toast('Exclusão cancelada');return}mot=prompt('Motivo da exclusão (ex.: teste, duplicado):','')||''}b.disabled=true;try{await run(a==='inativar'?'inativarEnvio':a==='reativar'?'reativarEnvio':'excluirEnvio',id,mot);toast(a==='inativar'?'Envio inativado':a==='reativar'?'Envio reativado':'Envio excluído');await carregar()}catch(x){b.disabled=false;toast(msg(x))}return}if(a==='editar'){S.abertos[id]='editar';render();return}
@@ -495,9 +515,9 @@ function renderFicha(){
    +c.envios.map(i=>'<tr><td class="num">'+esc(fmt(i.data))+'</td><td class="num">'+esc(i.pedido||'—')+'</td><td>'+esc(i.tipo||'—')+'</td><td><div class="files">'+(arqs(i.receita,'Receita',i.id)||'—')+'</div></td><td>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP',i.id)+'</div></td><td class="num">'+esc(i.os||'—')+'</td><td>'+esc(i.resp||'—')+(i.osEm?'<div class="mut">'+esc(fmt(i.osEm))+'</div>':'')+'</td><td>'+(temOS(i)?'<span class="pill o">Com OS</span>':'<span class="pill p">Pendente</span>')+(i.nota?'<div class="mut" style="margin-top:4px">Nota: '+esc(i.nota)+'</div>':'')+'</td></tr>').join('')
    +'</tbody></table></div><div class="mut" style="margin-top:12px">Para lançar ou alterar a OS de um envio pendente, use a aba Fila e busque pelo CPF.</div>';
 }
-$('cliFicha').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+$('cliFicha').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.f==='voltar'){S.ficha='';renderCli();return}
-  if(b.dataset.a==='ver'){if(exigePedido(b.dataset.id)){toast('Informe o nº do pedido Bling na aba Fila (busque pelo CPF) para abrir a receita');return}abrirArquivo(b.dataset.url,b.dataset.nome)}});
+  if(b.dataset.a==='ver'){if(!(await pedirPedido(b.dataset.id)))return;abrirArquivo(b.dataset.url,b.dataset.nome)}});
 
 async function carregarHist(){
   $('tHist').innerHTML='<tr><td colspan="5" class="mut">Carregando…</td></tr>';
