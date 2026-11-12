@@ -197,6 +197,7 @@ tr.clk:hover td{background:var(--soft)}
       </div>
       <div class="filtros">
         <label for="fTipo">Tipo <select id="fTipo"><option value="">Todos</option><option>Influenciador</option><option>Embaixadores</option><option>Cliente site</option><option>Diretoria</option><option value="_sem">Sem tipo</option></select></label>
+        <label for="fDup">Duplicados <select id="fDup"><option value="">Todos</option><option value="sim">Só duplicados</option></select></label>
         <label for="fPed">Pedido Bling <select id="fPed"><option value="">Todos</option><option value="sim">Informado</option><option value="nao">Não informado</option></select></label>
         <button type="button" class="ghost" id="fBlingSemOS" title="Pendentes que já têm nº do pedido Bling e ainda não têm OS">Bling sem OS</button>
         <label for="fLab">Laboratório <select id="fLab"><option value="">Todos</option><option>Repro</option><option>Iguaçu</option><option>Primie</option><option value="_sem">Sem laboratório</option></select></label>
@@ -258,7 +259,7 @@ tr.clk:hover td{background:var(--soft)}
 
 <script>
 const $=id=>document.getElementById(id);
-const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fLab:'',fPed:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
+const S={token:'',eu:null,itens:[],tab:'pend',q:'',ord:'old',pag:60,abertos:{},hist:{},users:[],fTipo:'',fLab:'',fPed:'',fDup:'',fData:'',clientes:[],qc:'',pagCli:100,ficha:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const dig=s=>String(s??'').replace(/\D/g,'');
@@ -338,18 +339,22 @@ $('btnMais').onclick=()=>{S.pag+=60;render()};
 
 const temOS=i=>!!String(i.os||'').trim();
 const LABS=['Repro','Iguaçu','Primie'];
+let DUP={};
+const chaveCli=i=>dig(i.cpf)||norm(String(i.email||'').trim());
+const dupTag=i=>{const g=DUP[chaveCli(i)]||[];if(g.length<2)return '';const c=g.filter(temOS).length,pos=g.slice().sort((a,b)=>a.data.localeCompare(b.data)).indexOf(i)+1;return '<div style="margin-top:8px"><span class="pill p">Possível duplicado</span> <span class="mut">Envio '+pos+' de '+g.length+' deste cliente'+(c?' · '+c+' com OS':'')+'</span></div>'};
 const labDe=os=>{const n=norm(String(os||'').split('|').slice(1).join(' ')+' '+(String(os||'').includes('|')?'':os));return /repro/.test(n)?'Repro':/iguacu/.test(n)?'Iguaçu':/prim/.test(n)?'Primie':''};
 const numOS=os=>String(os||'').split('|')[0].trim();
 const TIPOS=['Influenciador','Embaixadores','Cliente site','Diretoria'];
 const diaLocal=iso=>{if(!iso)return'';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const tipoSel=i=>'<select class="tiposel'+(i.tipo?'':' vazio-t')+'" data-id="'+esc(i.id)+'" aria-label="Tipo do pedido"><option value="">'+(i.tipo?'Sem tipo':'Escolher tipo do pedido…')+'</option>'+TIPOS.map(t=>'<option'+(i.tipo===t?' selected':'')+'>'+t+'</option>').join('')+'</select>';
 $('fTipo').onchange=e=>{S.fTipo=e.target.value;S.pag=60;render()};
+$('fDup').onchange=e=>{S.fDup=e.target.value;S.pag=60;render()};
 $('fPed').onchange=e=>{S.fPed=e.target.value;S.pag=60;render()};
 $('fBlingSemOS').onclick=()=>{S.tab='pend';S.fPed='sim';S.fData='';$('fData').value='';$('fPed').value='sim';S.pag=60;render()};
 $('fLab').onchange=e=>{S.fLab=e.target.value;S.pag=60;render()};
 $('fData').onchange=e=>{S.fData=e.target.value;S.pag=60;render()};
 $('fHoje').onclick=()=>{S.fData=diaLocal(new Date().toISOString());$('fData').value=S.fData;S.pag=60;render()};
-$('fLimpar').onclick=()=>{S.fPed='';$('fPed').value='';S.fData='';S.fTipo='';S.fLab='';$('fData').value='';$('fTipo').value='';$('fLab').value='';render()};
+$('fLimpar').onclick=()=>{S.fDup='';$('fDup').value='';S.fPed='';$('fPed').value='';S.fData='';S.fTipo='';S.fLab='';$('fData').value='';$('fTipo').value='';$('fLab').value='';render()};
 $('lista').addEventListener('change',async e=>{const s=e.target.closest('select.tiposel');if(!s)return;const id=s.dataset.id,t=s.value;s.disabled=true;
   try{await run('salvarTipo',id,t);item(id).tipo=t;delete S.hist[id];toast((t||'Sem tipo')+' · salvo por '+S.eu.nome);render()}catch(x){s.disabled=false;toast(msg(x));render()}});
 function render(){
@@ -360,15 +365,19 @@ function render(){
   if(S.fTipo)l=l.filter(i=>S.fTipo==='_sem'?!i.tipo:i.tipo===S.fTipo);
   if(S.fLab)l=l.filter(i=>{const lb=labDe(i.os);return S.fLab==='_sem'?(temOS(i)&&!lb):lb===S.fLab});
   if(S.fPed)l=l.filter(i=>S.fPed==='sim'?!!String(i.pedido||'').trim():!String(i.pedido||'').trim());
-  $('fLimpar').hidden=!S.fData&&!S.fTipo&&!S.fLab&&!S.fPed;
+  DUP={};S.itens.forEach(i=>{const k=chaveCli(i);if(k)(DUP[k]=DUP[k]||[]).push(i)});
+  if(S.fDup)l=l.filter(i=>(DUP[chaveCli(i)]||[]).length>1);
+  $('fLimpar').hidden=!S.fData&&!S.fTipo&&!S.fLab&&!S.fPed&&!S.fDup;
   document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',!S.fData&&x.dataset.t===S.tab));
   if(S.fData){const cont={},cl={};l.forEach(i=>{const t=i.tipo||'Sem tipo';cont[t]=(cont[t]||0)+1;const lb=labDe(i.os)||'Sem laboratório';cl[lb]=(cl[lb]||0)+1});
     $('resumo').innerHTML='<span><strong>'+l.length+' OS lançada'+(l.length===1?'':'s')+'</strong> em '+esc(S.fData.split('-').reverse().join('/'))+(S.fTipo?' · filtro: '+esc(S.fTipo==='_sem'?'Sem tipo':S.fTipo):'')+(S.fLab?' · laboratório: '+esc(S.fLab==='_sem'?'Sem laboratório':S.fLab):'')+'</span>'+Object.keys(cont).sort().map(t=>'<span>'+esc(t)+': <strong>'+cont[t]+'</strong></span>').join('')+'<span style="flex-basis:100%;height:0;padding:0"></span>'+LABS.concat(['Sem laboratório']).filter(t=>cl[t]).map(t=>'<span>'+esc(t)+': <strong>'+cl[t]+'</strong></span>').join('');$('resumo').hidden=false}
+  else if(S.fDup){const cl=new Set(l.map(chaveCli));$('resumo').innerHTML='<span><strong>'+l.length+' envio'+(l.length===1?'':'s')+'</strong> de <strong>'+cl.size+'</strong> cliente'+(cl.size===1?'':'s')+' que enviaram mais de uma vez</span><span>Os envios do mesmo cliente aparecem juntos. Confira e inative os repetidos.</span>';$('resumo').hidden=false}
   else if(S.fPed){const pd=S.tab==='pend';$('resumo').innerHTML='<span><strong>'+l.length+' envio'+(l.length===1?'':'s')+'</strong> '+(S.fPed==='sim'?'com nº do pedido Bling informado':'sem nº do pedido Bling')+(pd?' e sem OS':S.tab==='ok'?' e com OS':'')+'</span>'+(S.fPed==='sim'&&pd?'<span>Abra "Ver histórico" no envio para ver quem informou o pedido e quando.</span>':'');$('resumo').hidden=false}
   else $('resumo').hidden=true;
   const q=norm(S.q.trim()),qd=/[a-z@]/i.test(S.q)?'':dig(S.q);
   if(q)l=l.filter(i=>qd?[i.cpf,i.pedido,i.os].some(x=>dig(x)===qd):[i.nome,i.email,i.pedido,i.os,i.id].some(x=>norm(x).includes(q)));
   l.sort((a,b)=>S.ord==='old'?a.data.localeCompare(b.data):b.data.localeCompare(a.data));
+  if(S.fDup){const pri={};l.forEach((i,n)=>{const k=chaveCli(i);if(!(k in pri))pri[k]=n});l.sort((a,b)=>pri[chaveCli(a)]-pri[chaveCli(b)]||a.data.localeCompare(b.data))}
   const el=$('lista');
   if(!S.itens.length){el.innerHTML='<div class="vazio"><strong>Nenhuma receita recebida ainda</strong>Assim que um cliente enviar pelo link do site, o envio aparece aqui como pendente.</div>';$('btnMais').hidden=true;return}
   if(!l.length){el.innerHTML='<div class="vazio"><strong>Nada encontrado</strong>'+(q?'Nenhum envio corresponde a “'+esc(S.q)+'” nesta aba. Tente a aba Todos.':'Não há envios nesta aba.')+'</div>';$('btnMais').hidden=true;return}
@@ -406,7 +415,7 @@ function linha(i){
   let extra='';
   if(ab==='nota')extra='<div class="extra"><form class="notaf" data-id="'+esc(i.id)+'" style="display:flex;gap:8px;flex-wrap:wrap"><textarea id="n-'+esc(i.id)+'" rows="2" style="flex:1 1 300px;min-width:0" maxlength="1000" placeholder="Nota interna, visível só para a equipe">'+esc(i.nota)+'</textarea><button type="submit">Salvar nota</button><button type="button" class="ghost" data-a="fechaExtra" data-id="'+esc(i.id)+'">Cancelar</button></form></div>';
   if(ab==='hist'){const h=S.hist[i.id];extra='<div class="extra">'+(!h?'<span class="mut">Carregando histórico…</span>':!h.length?'<span class="mut">Sem registros.</span>':'<ul class="tl">'+h.map(x=>'<li><span class="mut num">'+esc(fmt(x.data))+'</span><span><span class="q">'+esc(x.nome)+'</span> · '+esc(x.acao)+(x.det?' <span class="mut">· '+esc(x.det)+'</span>':'')+'</span></li>').join('')+'</ul>')+'</div>'}
-  return '<div class="row"><div><button type="button" class="nomebtn" data-a="ficha" data-cpf="'+esc(dig(i.cpf))+'" title="Abrir ficha do cliente">'+esc(i.nome)+'</button><div class="mut">'+esc(i.email)+(i.whats?' · '+esc(i.whats):'')+'</div><div class="mut">Enviado em '+esc(fmt(i.data))+' · '+esc(i.id)+'</div>'+tipoSel(i)+(i.obs?'<div class="mut" style="margin-top:6px">Obs. do cliente: '+esc(i.obs)+'</div>':'')+(i.nota?'<div class="nota">Nota interna: '+esc(i.nota)+'</div>':'')+'</div>'
+  return '<div class="row"><div><button type="button" class="nomebtn" data-a="ficha" data-cpf="'+esc(dig(i.cpf))+'" title="Abrir ficha do cliente">'+esc(i.nome)+'</button><div class="mut">'+esc(i.email)+(i.whats?' · '+esc(i.whats):'')+'</div><div class="mut">Enviado em '+esc(fmt(i.data))+' · '+esc(i.id)+'</div>'+dupTag(i)+tipoSel(i)+(i.obs?'<div class="mut" style="margin-top:6px">Obs. do cliente: '+esc(i.obs)+'</div>':'')+(i.nota?'<div class="nota">Nota interna: '+esc(i.nota)+'</div>':'')+'</div>'
    +'<div><span class="k">Pedido</span>'+pedidoHTML(i)+'<span class="k" style="margin-top:8px">CPF</span><div class="num">'+esc(cpfFmt(i.cpf))+'</div>'+(tem?'':'<div style="margin-top:8px"><span class="pill p">Pendente</span></div>')+'</div>'
    +'<div><span class="k">Receita</span><div class="files">'+(arqs(i.receita,'Receita',i.id)||'<span class="mut">—</span>')+'</div><span class="k" style="margin-top:10px">DNP</span>'+(i.dnpMedida?'<div class="num">'+esc(i.dnpMedida)+'</div>':'')+'<div class="files">'+arqs(i.dnp,'Foto DNP',i.id)+'</div></div>'
    +'<div>'+dir+acoes+'</div>'+extra+'</div>';
