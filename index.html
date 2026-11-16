@@ -282,12 +282,54 @@ async function call(fn,...a){
   if(ult&&ult.servidor)throw ult;
   throw new Error('Sem conexão com o servidor. Verifique a internet e tente de novo.');
 }
-async function run(fn,...a){try{return await call(fn,S.token,...a)}catch(e){if(/sess[aã]o expirou/i.test(msg(e))){sairLocal();toast('Sua sessão expirou. Entre novamente.')}throw e}}
+async function run(fn,...a){try{return await call(fn,S.token,...a)}catch(e){if(/sess[aã]o expirou/i.test(msg(e))){if(S.sc){scExpirou();throw e}sairLocal();toast('Sua sessão expirou. Entre novamente.')}throw e}}
+
+/* ===== Saint Center · acesso único =====
+   Quem entra no Saint Center e tem a Fila de Lentes liberada em "Pessoas e acessos" já entra direto aqui,
+   sem um segundo login. O servidor confirma o acesso no Saint Center a cada chamada.
+   O login próprio da Fila de Lentes continua funcionando como reserva. */
+function scSessao(){
+  try{
+    const t=localStorage.getItem('sc-token')||'',u=JSON.parse(localStorage.getItem('sc-user')||'null');
+    if(!t||t.indexOf('SC.')!==0||!u||!u.login)return null;
+    const nivel=u.perms&&u.perms.lentes;
+    return{token:t,nivel:nivel||'',eu:{login:u.login,nome:u.nome||u.login,email:u.email||'',admin:nivel==='admin',ativo:true,saintCenter:true}};
+  }catch(_){return null}
+}
+function scBloqueio(tit,txt){
+  S.token='';S.eu=null;tela('fLogin');$('fLogin').hidden=true;
+  let b=$('scAviso');
+  if(!b){b=document.createElement('div');b.id='scAviso';b.className='box';b.style.textAlign='center';$('fLogin').parentNode.insertBefore(b,$('fLogin'))}
+  b.hidden=false;
+  b.innerHTML='<div class="k" style="margin:0">'+esc(tit)+'</div><p class="mut" style="margin:12px 0 18px">'+esc(txt)+'</p>'
+    +(window.top===window?'<a href="https://saintgermainb-hub.github.io/saintcenter/#/m/lentes" style="display:inline-block;background:#000;color:#fff;text-decoration:none;font-size:11px;letter-spacing:.2em;padding:14px 22px">ABRIR O SAINT CENTER</a>':'');
+}
+const SC_API='https://script.google.com/macros/s/AKfycbyWR9ceeCuNbgk_yjyzn-8mCQwCgpSVpFrn3gvsS2HGniMxP14pNNmVIRXLGqP8_F3g/exec';
+async function scExpirou(){
+  if(scExpirou.vez)return;scExpirou.vez=1;
+  const tk=S.token;let valido=false;
+  try{const r=await fetch(SC_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:'validar',args:[tk,'lentes']})});const j=await r.json();valido=!!(j.ok&&j.resultado&&j.resultado.ok)}catch(_){}
+  if(valido){ // Saint Center confirma o acesso, mas o servidor da Fila não aceitou: usa o login próprio como reserva
+    S.sc=false;$('btnSenha').hidden=false;$('btnSair').hidden=false;sairLocal();
+    $('eLogin').textContent='Não foi possível entrar direto pelo Saint Center. Entre com o login da Fila de Lentes.';return;
+  }
+  try{if(window.parent!==window)window.parent.postMessage({saintCenter:'sessao-expirou'},location.origin)}catch(_){}
+  scBloqueio('SESSÃO EXPIRADA','Entre de novo pelo Saint Center.');
+}
+async function scEntrar(){
+  const sc=scSessao();if(!sc)return false;
+  if(!sc.nivel){S.sc=true;scBloqueio('ACESSO RESTRITO','A Fila de Lentes não está liberada para o seu acesso. Fale com a coordenação.');return true}
+  S.sc=true;S.token=sc.token;S.eu=sc.eu;
+  try{sessionStorage.removeItem('sg-t');sessionStorage.removeItem('sg-u')}catch(_){}
+  $('btnSenha').hidden=true;$('btnSair').hidden=true;
+  entrarApp();return true;
+}
 
 function tela(id){['fSetup','fLogin','fEsqueci','fTroca','app'].forEach(x=>$(x).hidden=x!==id);$('quem').hidden=!S.eu||!(id==='app'||id==='fTroca')}
 function sairLocal(){S.token='';S.eu=null;try{sessionStorage.removeItem('sg-t');sessionStorage.removeItem('sg-u')}catch(_){};tela('fLogin')}
 
 (async()=>{
+  if(await scEntrar())return;
   try{const t=sessionStorage.getItem('sg-t'),u=sessionStorage.getItem('sg-u');if(t&&u){S.token=t;S.eu=JSON.parse(u);entrarApp();return}}catch(_){}
   try{const tem=await call('temUsuarios');tela(tem?'fLogin':'fSetup')}catch(e){tela('fLogin');$('eLogin').textContent=msg(e)}
 })();
